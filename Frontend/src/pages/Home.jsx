@@ -1,4 +1,5 @@
 import HeroSection from '../components/Home/HeroSection';
+import PricingSection from '../components/Home/PricingSection';
 import SolutionsSection from '../components/Home/SolutionsSection';
 
 export default function Home() {
@@ -6,6 +7,7 @@ export default function Home() {
         <div>
             <HeroSection />
             <SolutionsSection />
+            <PricingSection />
         </div>
     );
 }
