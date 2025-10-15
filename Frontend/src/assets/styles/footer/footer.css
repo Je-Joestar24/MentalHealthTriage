@@ -1,0 +1,77 @@
+/* Footer - minimalist, themed, with micro-animations and subtle decoration */
+footer {
+  position: relative;
+  overflow: hidden;
+  padding: 40px 16px;
+  background: linear-gradient(180deg, var(--theme-bg) 0%, var(--theme-bg-secondary) 100%);
+  border-top: 1px solid var(--theme-border);
+}
+
+/* center content without requiring extra markup */
+footer small,
+footer p,
+footer div {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: block;
+  text-align: center;
+  color: var(--theme-text-secondary);
+}
+
+footer small { font-size: .95rem; }
+
+/* Decorative gradient blobs (not overpowering) */
+footer::before,
+footer::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+  filter: blur(24px);
+  opacity: .35;
+  animation: footerFloat 16s ease-in-out infinite;
+}
+
+footer::before {
+  width: 240px; height: 240px;
+  left: -60px; bottom: -80px;
+  background: radial-gradient(120px 120px at 60% 40%, var(--theme-secondary), transparent),
+              radial-gradient(120px 120px at 30% 70%, var(--theme-primary), transparent);
+  animation-delay: .2s;
+}
+
+footer::after {
+  width: 220px; height: 220px;
+  right: -70px; top: -80px;
+  background: radial-gradient(110px 110px at 40% 40%, var(--theme-accent), transparent),
+              radial-gradient(120px 120px at 70% 60%, var(--theme-secondary), transparent);
+  opacity: .25;
+}
+
+/* Subtle dotted grid overlay */
+footer .fx-grid {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle at 1px 1px, rgba(148,163,184,.25) 1px, transparent 0);
+  background-size: 22px 22px;
+  mask-image: linear-gradient(to top, transparent 0%, rgba(0,0,0,.4) 30%, rgba(0,0,0,.7) 60%, rgba(0,0,0,.9) 100%);
+  pointer-events: none;
+  animation: gridFade 10s ease-in-out infinite alternate;
+}
+
+/* Link accents */
+footer a { color: var(--theme-primary); text-decoration: none; position: relative; }
+footer a::after { content: ""; position: absolute; left: 0; bottom: -2px; height: 2px; width: 100%; background: linear-gradient(90deg, var(--theme-primary), var(--theme-secondary)); transform: scaleX(0); transform-origin: left; transition: transform .25s ease; }
+footer a:hover::after { transform: scaleX(1); }
+
+/* Animations */
+@keyframes footerFloat { 0%,100% { transform: translate(0,0); } 50% { transform: translate(4%, -4%); } }
+@keyframes gridFade { 0% { opacity: .28; } 100% { opacity: .18; } }
+
+/* Dark mode tuning */
+@media (prefers-color-scheme: dark) {
+  footer { background: linear-gradient(180deg, var(--theme-bg) 0%, var(--theme-bg-secondary) 100%); border-top-color: rgba(148,163,184,.25); }
+  footer .fx-grid { background-image: radial-gradient(circle at 1px 1px, rgba(71,85,105,.35) 1px, transparent 0); }
+}
+
+
