@@ -1,4 +1,5 @@
 @import './home/hero.css';
+@import './nav/navigation.css';
 
 :root {
     /* Theme Colors - Light Mode */
