@@ -75,8 +75,8 @@ const HeroSection = () => {
                             component="h1"
                             className="hero-title"
                             sx={{
-                                fontSize: { xs: '2.5rem', md: '3.5rem', lg: '4rem' },
-                                fontWeight: 800,
+                                fontSize: { xs: '2rem', md: '3rem', lg: '3.5rem' },
+                                fontWeight: 600,
                                 lineHeight: 1.1,
                                 mb: 3,
                                 background: 'linear-gradient(135deg, #1e293b 0%, #475569 50%, #2563eb 100%)',
@@ -103,9 +103,10 @@ const HeroSection = () => {
                             component="p"
                             className="hero-subtitle"
                             sx={{
-                                fontSize: '1.25rem',
+                                fontSize: '1rem',
+                                fontWeight: 100,
                                 color: 'text.secondary',
-                                mb: 4,
+                                mb: 6,
                                 lineHeight: 1.6,
                                 maxWidth: '90%'
                             }}

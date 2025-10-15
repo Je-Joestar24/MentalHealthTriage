@@ -8,7 +8,6 @@ export default function Navbar() {
                 <div className="nav-left">
                     <Logo />
                     <ul className="nav-links" role="menubar">
-                        <li role="none"><a role="menuitem" href="#features" className="nav-link">Features</a></li>
                         <li role="none"><a role="menuitem" href="#solutions" className="nav-link">Solutions</a></li>
                         <li role="none"><a role="menuitem" href="#pricing" className="nav-link">Pricing</a></li>
                         <li role="none"><a role="menuitem" href="#docs" className="nav-link">Docs</a></li>
