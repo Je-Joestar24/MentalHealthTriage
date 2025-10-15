@@ -10,7 +10,7 @@ export default function Navbar() {
                     <ul className="nav-links" role="menubar">
                         <li role="none"><a role="menuitem" href="#solutions" className="nav-link">Solutions</a></li>
                         <li role="none"><a role="menuitem" href="#pricing" className="nav-link">Pricing</a></li>
-                        <li role="none"><a role="menuitem" href="#docs" className="nav-link">Docs</a></li>
+                        {/* <li role="none"><a role="menuitem" href="#docs" className="nav-link">Docs</a></li> */}
                     </ul>
                 </div>
                 <div className="nav-right">

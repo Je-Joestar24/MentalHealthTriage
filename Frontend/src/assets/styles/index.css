@@ -2,6 +2,7 @@
 @import './home/solutions.css';
 @import './nav/navigation.css';
 @import './home/pricing.css';
+@import './footer/footer.css';
 
 :root {
     /* Theme Colors - Light Mode */
