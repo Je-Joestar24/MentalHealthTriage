@@ -1,0 +1,120 @@
+@import './home/hero.css';
+
+:root {
+    /* Theme Colors - Light Mode */
+    --theme-primary: #2563eb;
+    --theme-secondary: #3b82f6;
+    --theme-accent: #f59e0b;
+    --theme-success: #10b981;
+    --theme-warning: #f59e0b;
+    --theme-error: #ef4444;
+
+    /* Background Colors */
+    --theme-bg: #ffffff;
+    --theme-bg-secondary: #f8fafc;
+    --theme-bg-tertiary: #f1f5f9;
+    --theme-bg-card: rgba(255, 255, 255, 0.8);
+    --theme-bg-overlay: rgba(255, 255, 255, 0.9);
+
+    /* Text Colors */
+    --theme-text: #0f172a;
+    --theme-text-secondary: #475569;
+    --theme-text-muted: #64748b;
+    --theme-text-inverse: #ffffff;
+
+    /* Border Colors */
+    --theme-border: #e2e8f0;
+    --theme-border-secondary: #cbd5e1;
+    --theme-border-accent: rgba(37, 99, 235, 0.2);
+}
+
+/* Dark Mode Overrides */
+@media (prefers-color-scheme: dark) {
+    :root {
+        /* Theme Colors - Dark Mode */
+        --theme-primary: #60a5fa;
+        --theme-secondary: #3b82f6;
+        --theme-accent: #fbbf24;
+        --theme-success: #34d399;
+        --theme-warning: #fbbf24;
+        --theme-error: #f87171;
+
+        /* Background Colors */
+        --theme-bg: #0f172a;
+        --theme-bg-secondary: #1e293b;
+        --theme-bg-tertiary: #334155;
+        --theme-bg-card: rgba(30, 41, 59, 0.8);
+        --theme-bg-overlay: rgba(15, 23, 42, 0.9);
+
+        /* Text Colors */
+        --theme-text: #f8fafc;
+        --theme-text-secondary: #cbd5e1;
+        --theme-text-muted: #94a3b8;
+        --theme-text-inverse: #0f172a;
+
+        /* Border Colors */
+        --theme-border: #334155;
+        --theme-border-secondary: #475569;
+        --theme-border-accent: rgba(96, 165, 250, 0.3);
+    }
+}
+
+/* Modern Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--theme-bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary));
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, var(--theme-secondary), var(--theme-primary));
+}
+
+/* Global Styles */
+* {
+    box-sizing: border-box;
+}
+
+html, body, #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    background-color: var(--theme-bg-tertiary);
+    overflow-x: hidden;
+}
+
+/* Smooth scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Remove default margins and paddings */
+h1, h2, h3, h4, h5, h6, p, ul, ol, li {
+    margin: 0;
+    padding: 0;
+}
+
+/* Focus styles for accessibility */
+*:focus {
+    outline: 2px solid var(--theme-primary);
+    outline-offset: 2px;
+}
+
+/* Selection styles */
+::selection {
+    background-color: var(--theme-primary);
+    color: var(--theme-text-inverse);
+}
