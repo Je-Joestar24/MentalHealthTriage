@@ -33,7 +33,7 @@ const router = createBrowserRouter([
             },
             // Main Layout - for dashboard, profile, settings, etc.
             {
-                path: "admin",
+                path: "superadmin",
                 element: <MainLayout />,
                 children: [
                     // Add your main app routes here like:
