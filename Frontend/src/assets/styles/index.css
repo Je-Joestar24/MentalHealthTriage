@@ -3,6 +3,7 @@
 @import './nav/navigation.css';
 @import './home/pricing.css';
 @import './footer/footer.css';
+@import './login/login.css';
 
 :root {
     /* Theme Colors - Light Mode */
@@ -33,9 +34,8 @@
 }
 
 /* Dark Mode Overrides */
-@media (prefers-color-scheme: dark) {
+/* @media (prefers-color-scheme: dark) {
     :root {
-        /* Theme Colors - Dark Mode */
         --theme-primary: #60a5fa;
         --theme-secondary: #3b82f6;
         --theme-accent: #fbbf24;
@@ -43,25 +43,22 @@
         --theme-warning: #fbbf24;
         --theme-error: #f87171;
 
-        /* Background Colors */
         --theme-bg: #0f172a;
         --theme-bg-secondary: #1e293b;
         --theme-bg-tertiary: #334155;
         --theme-bg-card: rgba(30, 41, 59, 0.8);
         --theme-bg-overlay: rgba(15, 23, 42, 0.9);
 
-        /* Text Colors */
         --theme-text: #f8fafc;
         --theme-text-secondary: #cbd5e1;
         --theme-text-muted: #94a3b8;
         --theme-text-inverse: #0f172a;
 
-        /* Border Colors */
         --theme-border: #334155;
         --theme-border-secondary: #475569;
         --theme-border-accent: rgba(96, 165, 250, 0.3);
     }
-}
+} */
 
 /* Modern Scrollbar */
 ::-webkit-scrollbar {

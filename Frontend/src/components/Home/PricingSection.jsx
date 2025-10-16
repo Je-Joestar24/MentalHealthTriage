@@ -5,31 +5,31 @@ import '../../assets/styles/home/pricing.css';
 
 const seatOptions = [
   { key: '1', label: '1 seat' },
+  { key: '2', label: '2 seats' },
+  { key: '3', label: '3 seats' },
+  { key: '4', label: '4 seats' },
   { key: '5', label: '5 seats' },
   { key: '10+', label: '10+ seats' },
 ];
 
 const tiers = [
   {
-    id: 'team',
-    name: 'Team',
-    desc: 'For small practices getting started',
-    features: ['Core intake & triage', 'Secure records', 'Email notifications'],
+    id: 'individual',
+    name: 'Individual',
+    desc: 'For individual therapists and small practices',
+    features: ['Core intake & triage', 'Secure records', 'Email notifications', 'Basic reporting'],
     highlight: false,
+    basePrice: 50,
   },
   {
-    id: 'agency',
-    name: 'Agency',
-    desc: 'For growing organizations',
-    features: ['Multi-tenant orgs & roles', 'Integrations', 'Advanced reporting'],
+    id: 'company',
+    name: 'Company',
+    desc: 'For organizations with multiple therapists',
+    features: ['Multi-tenant orgs & roles', 'Integrations', 'Advanced reporting', 'Team management', 'Priority support'],
     highlight: true,
-  },
-  {
-    id: 'enterprise',
-    name: 'Enterprise',
-    desc: 'For large orgs and networks',
-    features: ['SLA & priority support', 'Custom controls', 'SSO & audit trails'],
-    highlight: false,
+    basePrice: 50,
+    discountPrice: 45,
+    discountThreshold: 4,
   },
 ];
 
@@ -38,6 +38,25 @@ export default function PricingSection() {
   const [seats, setSeats] = useState('1');
 
   const priceSuffix = useMemo(() => (billing === 'yearly' ? 'yr' : 'mo'), [billing]);
+  
+  const getPrice = useMemo(() => {
+    return (tier) => {
+      const seatCount = parseInt(seats) || 1;
+      let price = tier.basePrice;
+      
+      // Apply company discount for 4+ seats
+      if (tier.id === 'company' && seatCount >= tier.discountThreshold) {
+        price = tier.discountPrice;
+      }
+      
+      // Apply yearly discount (20% off)
+      if (billing === 'yearly') {
+        price = Math.round(price * 0.8);
+      }
+      
+      return price;
+    };
+  }, [seats, billing]);
 
   return (
     <Box component="section" id="pricing" className="pricing-section" aria-label="Pricing Plans">
@@ -77,16 +96,26 @@ export default function PricingSection() {
 
         <Box className="pricing-grid" role="list">
           {tiers.map(tier => (
-            <Box key={tier.id} className={`price-card ${tier.highlight ? 'is-highlight' : ''}`} role="listitem" tabIndex={0} aria-label={`${tier.name} plan`}>
+            <Box key={tier.id} className={`price-card ${tier.highlight ? 'is-highlight' : ''}`} sx={{display: 'flex', flexDirection: 'column'}} role="listitem" tabIndex={0} aria-label={`${tier.name} plan`}>
               <div className="price-card-head">
                 <Typography variant="h6" className="price-name">{tier.name}</Typography>
                 <Typography variant="body2" className="price-desc">{tier.desc}</Typography>
               </div>
 
-              <div className="price-amount" aria-label="Price placeholder">
+              <div className="price-amount" aria-label={`Price: $${getPrice(tier)} per ${priceSuffix}`}>
                 <span className="currency">$</span>
-                <span className="value">--.--</span>
+                <span className="value">{getPrice(tier)}</span>
                 <span className="per">/{priceSuffix}</span>
+                {tier.id === 'company' && parseInt(seats) >= tier.discountThreshold && (
+                  <Chip 
+                    label="Save $5/seat" 
+                    size="small" 
+                    color="success" 
+                    variant="outlined"
+                    className="discount-chip"
+                    sx={{ ml: 1, fontSize: '0.75rem' }}
+                  />
+                )}
               </div>
 
               <ul className="price-features">
@@ -98,7 +127,7 @@ export default function PricingSection() {
                 ))}
               </ul>
 
-              <Button variant={tier.highlight ? 'contained' : 'outlined'} color="primary" fullWidth aria-label={`Get started with ${tier.name}`}>
+              <Button variant={tier.highlight ? 'contained' : 'outlined'} color="primary" sx={{mt: 'auto'}} fullWidth aria-label={`Get started with ${tier.name}`}>
                 Get started
               </Button>
             </Box>

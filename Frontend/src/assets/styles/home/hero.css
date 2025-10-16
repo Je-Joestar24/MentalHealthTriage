@@ -393,7 +393,7 @@
 }
 
 /* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
+/* @media (prefers-color-scheme: dark) {
   .hero-section {
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
   }
@@ -411,7 +411,7 @@
     background: rgba(30, 41, 59, 0.95);
     border: 1px solid rgba(51, 65, 85, 0.3);
   }
-}
+} */
 
 /* Performance Optimizations */
 .hero-section * {
