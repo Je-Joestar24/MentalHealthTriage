@@ -5,6 +5,7 @@ import Login from "../pages/Login";
 import AuthLayout from "../layouts/AuthLayout";
 import HomeLayout from "../layouts/HomeLayout";
 import MainLayout from "../layouts/MainLayout";
+import AdminDashboard from "../pages/AdminDashboard";
 
 const router = createBrowserRouter([
     {
@@ -32,11 +33,11 @@ const router = createBrowserRouter([
             },
             // Main Layout - for dashboard, profile, settings, etc.
             {
-                path: "app",
+                path: "admin",
                 element: <MainLayout />,
                 children: [
                     // Add your main app routes here like:
-                    // { path: "dashboard", element: <Dashboard /> },
+                    { path: "dashboard", element: <AdminDashboard/> },
                     // { path: "profile", element: <Profile /> },
                     // { path: "settings", element: <Settings /> },
                 ]
