@@ -52,6 +52,15 @@
 .price-amount .currency { font-weight: 700; color: var(--theme-text-muted); }
 .price-amount .value { font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; }
 .price-amount .per { color: var(--theme-text-secondary); }
+.per-seat-info {
+  width: 100%;
+  margin-top: 4px;
+}
+.per-seat-text {
+  font-size: 0.875rem;
+  color: var(--theme-text-secondary);
+  font-weight: 500;
+}
 .discount-chip { 
   margin-left: 8px; 
   font-size: 0.75rem !important;

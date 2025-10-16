@@ -4,6 +4,7 @@
 @import './home/pricing.css';
 @import './footer/footer.css';
 @import './login/login.css';
+@import './layouts/layouts.css';
 
 :root {
     /* Theme Colors - Light Mode */
