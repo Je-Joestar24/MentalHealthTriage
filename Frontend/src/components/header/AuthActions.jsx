@@ -1,12 +1,18 @@
 // import { useUI } from "../../hooks/useUI"
+import { useNavigate } from "react-router-dom";
 
 export default function AuthActions() {
     // const { openModal } = useUI();
 
+    const navigate = useNavigate();
+
+    const handleLoginNavigation = () => {
+        navigate('/auth/login');
+    };
     return (
         <div className="nav-actions" role="group" aria-label="Authentication Actions">
             <button
-                onClick={() => { /* openModal("login") */ }}
+                onClick={handleLoginNavigation}
                 className="btn btn-outline"
                 aria-label="Login"
             >
