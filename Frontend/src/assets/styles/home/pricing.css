@@ -18,9 +18,12 @@
 
 .pricing-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
   margin-top: 24px;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .price-card {
@@ -39,17 +42,35 @@
 .price-name { font-weight: 700; }
 .price-desc { color: var(--theme-text-secondary); }
 
-.price-amount { display: flex; align-items: baseline; gap: 6px; margin: 12px 0 10px; }
+.price-amount { 
+  display: flex; 
+  align-items: baseline; 
+  gap: 6px; 
+  margin: 12px 0 10px; 
+  flex-wrap: wrap;
+}
 .price-amount .currency { font-weight: 700; color: var(--theme-text-muted); }
 .price-amount .value { font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; }
 .price-amount .per { color: var(--theme-text-secondary); }
+.discount-chip { 
+  margin-left: 8px; 
+  font-size: 0.75rem !important;
+  height: 20px !important;
+}
 
 .price-features { list-style: none; padding: 0; margin: 0 0 14px; display: grid; gap: 8px; }
 .feat { display: grid; grid-template-columns: 18px 1fr; gap: 8px; align-items: start; color: var(--theme-text-secondary); }
 .feat svg { color: #16a34a; width: 18px; height: 18px; filter: drop-shadow(0 6px 10px rgba(22,163,74,.25)); }
 
-@media (max-width: 992px) {
-  .pricing-grid { grid-template-columns: 1fr; }
+@media (max-width: 768px) {
+  .pricing-grid { 
+    grid-template-columns: 1fr; 
+    max-width: 400px;
+  }
+  .pricing-controls { 
+    grid-auto-flow: row; 
+    gap: 16px;
+  }
 }
 
 @media (prefers-color-scheme: dark) {
