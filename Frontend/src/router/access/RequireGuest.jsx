@@ -1,11 +1,13 @@
 import { Navigate } from "react-router-dom";
-import { useUserAuth } from "../../hooks/useAuth";
+import useUser from "../../hooks/userHook";
 
 export default function RequireGuest({ children }) {
-    const { user, userLogged } = useUserAuth();
+    const { user, userLogged, loading } = useUser();
+
+    if (loading) return null;
 
     if (userLogged || user) {
-        return <Navigate to="/products/" replace />;
+        return <Navigate to="/superadmin/dashboard" replace />;
     }
 
     return children;
