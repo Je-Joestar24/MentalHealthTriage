@@ -6,6 +6,8 @@ import AuthLayout from "../layouts/AuthLayout";
 import HomeLayout from "../layouts/HomeLayout";
 import MainLayout from "../layouts/MainLayout";
 import AdminDashboard from "../pages/AdminDashboard";
+import RequireGuest from "./access/RequireGuest";
+import RequireAuth from "./access/RequireAuth";
 
 const router = createBrowserRouter([
     {
@@ -17,7 +19,11 @@ const router = createBrowserRouter([
                 path: "",
                 element: <HomeLayout />,
                 children: [
-                    { path: "", element: <Home /> }
+                    { path: "", element: (
+                        <RequireGuest>
+                            <Home />
+                        </RequireGuest>
+                    ) }
                 ]
             },
             // Auth Layout - for login, register, forgot password, etc.
@@ -25,7 +31,11 @@ const router = createBrowserRouter([
                 path: "auth",
                 element: <AuthLayout />,
                 children: [
-                    { path: "login", element: <Login /> },
+                    { path: "login", element: (
+                        <RequireGuest>
+                            <Login />
+                        </RequireGuest>
+                    ) },
                     // Add more auth routes here like:
                     // { path: "register", element: <Register /> },
                     // { path: "forgot-password", element: <ForgotPassword /> },
@@ -37,7 +47,11 @@ const router = createBrowserRouter([
                 element: <MainLayout />,
                 children: [
                     // Add your main app routes here like:
-                    { path: "dashboard", element: <AdminDashboard/> },
+                    { path: "dashboard", element: (
+                        <RequireAuth roles={["super_admin"]}>
+                            <AdminDashboard/>
+                        </RequireAuth>
+                    ) },
                     // { path: "profile", element: <Profile /> },
                     // { path: "settings", element: <Settings /> },
                 ]

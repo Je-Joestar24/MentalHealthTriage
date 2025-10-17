@@ -1,8 +1,8 @@
 import { Navigate } from "react-router-dom";
-import { useUserAuth } from "../../hooks/useAuth";
+import useUser from "../../hooks/userHook";
 
-export default function RequireAuth({ children }) {
-  const { user, userLogged, loading } = useUserAuth(); // <- add a loading state if you don’t have one
+export default function RequireAuth({ children, roles }) {
+  const { user, userLogged, loading } = useUser();
 
   // Still checking auth (e.g. reading token from storage, validating session)
   if (loading) {
@@ -14,7 +14,15 @@ export default function RequireAuth({ children }) {
   }
 
   if (!user || !userLogged) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/auth/login" replace />;
+  }
+
+  // Role-based access control
+  if (roles && Array.isArray(roles) && roles.length > 0) {
+    const hasRole = roles.includes(user?.role);
+    if (!hasRole) {
+      return <Navigate to="/" replace />;
+    }
   }
   return children;
 }

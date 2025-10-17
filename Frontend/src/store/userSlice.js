@@ -64,9 +64,9 @@ export const signup = createAsyncThunk(
  */
 
 const initialState = {
-    user: JSON.parse(localStorage.getItem('user')) || null,
-    token: localStorage.getItem('token') || null,
-    userLogged: !!localStorage.getItem('token'),
+    user: JSON.parse(sessionStorage.getItem('user')) || null,
+    token: sessionStorage.getItem('token') || null,
+    userLogged: !!sessionStorage.getItem('token'),
     loading: false,
     error: null,
     signupErrors: null,
@@ -75,6 +75,26 @@ const initialState = {
 const userSlice = createSlice({
     name: 'user',
     initialState,
+    reducers: {
+        setLoading: (state, action) => {
+            state.loading = !!action.payload;
+        },
+        setError: (state, action) => {
+            state.error = action.payload || null;
+        },
+        setAuth: (state, action) => {
+            state.user = action.payload.user;
+            state.token = action.payload.token;
+            state.userLogged = !!action.payload.token;
+            state.error = null;
+        },
+        clearAuth: (state) => {
+            state.user = null;
+            state.token = null;
+            state.userLogged = false;
+            state.error = null;
+        },
+    },
 /*     extraReducers: (builder) => {
         builder
             .addCase(login.pending, (state) => {
@@ -127,4 +147,5 @@ const userSlice = createSlice({
     }, */
 });
 
+export const { setAuth, clearAuth, setLoading, setError } = userSlice.actions;
 export default userSlice.reducer;

@@ -3,15 +3,32 @@ import express from 'express';
 import morgan from 'morgan';
 import helmet from 'helmet';
 import cors from 'cors';
+import mongoose from 'mongoose';
 
 import itemsRouter from './routes/items.routes.js';
+import authRouter from './routes/auth.js';
 import { errorHandler } from './middleware/error.handler.js';
 
 const app = express();
 
+// Guard against unsupported Node versions (MongoDB driver/Mongoose)
+const nodeMajor = Number(process.versions.node.split('.')[0]);
+if (Number.isFinite(nodeMajor) && nodeMajor >= 22) {
+    console.error('❌ Unsupported Node.js version detected:', process.versions.node, '\nPlease use Node 18.x or 20.x LTS.');
+    process.exit(1);
+}
+
 // middleware
 app.use(helmet());
-app.use(cors());
+// Permissive CORS: allow all origins, methods, and headers
+app.use(
+    cors({
+        origin: '*',
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+        optionsSuccessStatus: 204,
+    })
+);
 app.use(express.json());
 if (process.env.NODE_ENV === 'development') app.use(morgan('dev'));
 
@@ -22,6 +39,7 @@ app.get('/', (req, res) => {
 
 // other routes
 app.use('/api/items', itemsRouter);
+app.use('/api/auth', authRouter);
 
 // health check
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
@@ -29,7 +47,19 @@ app.get('/health', (req, res) => res.json({ status: 'ok' }));
 // error handler
 app.use(errorHandler);
 
+// Connect to MongoDB then start server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`✅ MHT_Backend running on port ${PORT}`);
-});
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/mental_health_triage';
+
+mongoose
+    .connect(MONGO_URI, { autoIndex: true })
+    .then(() => {
+        console.log('✅ Connected to MongoDB');
+        app.listen(PORT, () => {
+            console.log(`✅ MHT_Backend running on port ${PORT}`);
+        });
+    })
+    .catch((err) => {
+        console.error('❌ MongoDB connection error:', err);
+        process.exit(1);
+    });
