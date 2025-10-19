@@ -7,6 +7,7 @@ import mongoose from 'mongoose';
 
 import itemsRouter from './routes/items.routes.js';
 import authRouter from './routes/auth.js';
+import organizationsRouter from './routes/organizations.routes.js';
 import { errorHandler } from './middleware/error.handler.js';
 
 const app = express();
@@ -40,6 +41,7 @@ app.get('/', (req, res) => {
 // other routes
 app.use('/api/items', itemsRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/admin/organizations', organizationsRouter);
 
 // health check
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
