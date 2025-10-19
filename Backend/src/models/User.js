@@ -15,12 +15,44 @@ const UserSchema = new Schema(
     specialization: { type: String, trim: true, default: '' },
     experience: { type: Number, min: 0, default: 0 },
     isActive: { type: Boolean, default: true },
+    subscriptionStartDate: { 
+      type: Date, 
+      default: Date.now,
+      index: true 
+    },
+    subscriptionEndDate: { 
+      type: Date, 
+      required: false,
+      index: true 
+    },
   },
   { timestamps: true }
 );
 
 // Indexes for faster role/org queries
 UserSchema.index({ role: 1, organization: 1 });
+
+// Virtual field to check if user subscription is expired
+UserSchema.virtual('isSubscriptionExpired').get(function() {
+  if (!this.subscriptionEndDate) return false;
+  return new Date() > this.subscriptionEndDate;
+});
+
+// Virtual field to get days remaining in user subscription
+UserSchema.virtual('daysRemaining').get(function() {
+  if (!this.subscriptionEndDate) return null;
+  const now = new Date();
+  const endDate = this.subscriptionEndDate;
+  const diffTime = endDate - now;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return Math.max(0, diffDays);
+});
+
+// Virtual field to check if user has active subscription
+UserSchema.virtual('hasActiveSubscription').get(function() {
+  if (!this.subscriptionEndDate) return true; // No end date means unlimited
+  return new Date() <= this.subscriptionEndDate;
+});
 
 // Hide sensitive/internal fields when converting to JSON/objects
 const toJSONTransform = (doc, ret) => {
