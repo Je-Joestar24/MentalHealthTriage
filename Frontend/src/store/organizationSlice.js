@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import * as organizationService from '../services/organizationService';
+import * as organizationService from '../services/admin/organizationService';
 
 // Async thunks for organization operations
 export const fetchOrganizations = createAsyncThunk(

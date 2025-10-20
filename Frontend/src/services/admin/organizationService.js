@@ -1,4 +1,4 @@
-import api from '../api/axios';
+import api from '../../api/axios';
 
 // Get all organizations with pagination and filtering
 export const getAllOrganizations = async (params = {}) => {
