@@ -5,7 +5,7 @@ import Patient from '../models/Patient.js';
 export const getAllOrganizations = async (queryParams) => {
   const {
     page = 1,
-    limit = 10,
+    limit = 5,
     search = '',
     subscriptionStatus = '',
     sortBy = 'createdAt',

@@ -10,6 +10,7 @@ import RequireGuest from "./access/RequireGuest";
 import RequireAuth from "./access/RequireAuth";
 import PsychologistDashboard from "../pages/PsychologistDashboard";
 import OrgAdminDashboard from "../pages/OrgAdminDashboard";
+import Organizations from "../pages/Admin/Organizations";
 
 const router = createBrowserRouter([
     {
@@ -52,6 +53,11 @@ const router = createBrowserRouter([
                     { path: "dashboard", element: (
                         <RequireAuth roles={["super_admin"]}>
                             <AdminDashboard/>
+                        </RequireAuth>
+                    ) },
+                    { path: "organizations", element: (
+                        <RequireAuth roles={["super_admin"]}>
+                            <Organizations/>
                         </RequireAuth>
                     ) },
                     // { path: "profile", element: <Profile /> },

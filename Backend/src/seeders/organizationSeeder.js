@@ -4,7 +4,7 @@ import User from '../models/User.js';
 import Organization from '../models/Organization.js';
 
 const STATIC_PASSWORD = 'Password123!';
-const NUMBER_OF_ORGANIZATIONS = 10;
+const NUMBER_OF_ORGANIZATIONS = 20;
 const PSYCHOLOGISTS_PER_ORG = 10;
 
 async function createAndSaveUser(userData) {
