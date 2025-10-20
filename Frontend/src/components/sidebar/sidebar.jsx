@@ -37,7 +37,7 @@ const NavItem = ({ to, icon: Icon, label }) => (
 const Sidebar = ({ onLogout }) => {
   return (
     <Box sx={{
-      width: 260,
+      width: 280,
       height: '100vh',
       position: 'sticky',
       top: 0,
