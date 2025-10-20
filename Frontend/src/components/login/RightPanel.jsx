@@ -15,9 +15,10 @@ import {
     VisibilityOff
 } from '@mui/icons-material';
 import useUser from '../../hooks/userHook';
+import { useNavigate } from 'react-router-dom';
 
 export default function RightPanel() {
-
+    const navigate = useNavigate();
     const [showPassword, setShowPassword] = useState(false);
     const [formData, setFormData] = useState({
         email: '',
@@ -34,7 +35,15 @@ export default function RightPanel() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        await login(formData.email, formData.password);
+        const result = await login(formData.email, formData.password);
+        if (result.success) {
+            const role = result.data?.user?.role;
+            // role-based redirects - adjust routes as needed
+            const route = role === 'super_admin' ? '/super/dashboard'
+                : role === 'company_admin' ? '/company/dashboard'
+                : '/psychologist/dashboard';
+            navigate(route);
+        }
     };
 
     return (<>

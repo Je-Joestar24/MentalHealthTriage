@@ -7,21 +7,26 @@ const STATIC_PASSWORD = 'Password123!';
 const NUMBER_OF_ORGANIZATIONS = 10;
 const PSYCHOLOGISTS_PER_ORG = 10;
 
+async function createAndSaveUser(userData) {
+  const user = new User(userData);
+  await user.save(); // triggers pre('save') hook to hash password
+  return user;
+}
+
 async function seedData() {
   try {
-    // Clear existing data
-    await User.deleteMany({});
+    // Preserve any existing super_admin created via controller; remove other users/orgs
+    await User.deleteMany({ role: { $ne: 'super_admin' } });
     await Organization.deleteMany({});
 
     const organizations = [];
-    const users = [];
+    let createdUsersCount = 0;
 
-    // Create organizations with their admins and psychologists
     for (let i = 0; i < NUMBER_OF_ORGANIZATIONS; i++) {
-      // Create admin for organization
-      const admin = new User({
+      // Create admin for organization (saved so password is hashed)
+      const admin = await createAndSaveUser({
         name: faker.person.fullName(),
-        email: faker.internet.email().toLowerCase(),
+        email: faker.internet.email().toLowerCase().replace(/@/g, `+org${i}@`), // reduce collisions
         password: STATIC_PASSWORD,
         role: 'company_admin',
         specialization: faker.person.jobArea(),
@@ -29,12 +34,11 @@ async function seedData() {
         isActive: true,
         subscriptionEndDate: faker.date.future()
       });
+      createdUsersCount++;
 
-      users.push(admin);
-
-      // Create organization
+      // Create organization referencing the saved admin
       const organization = new Organization({
-        name: faker.company.name(),
+        name: faker.company.name() + ` ${i}`, // reduce collisions for unique index
         admin: admin._id,
         psychologists: [],
         patients: [],
@@ -45,11 +49,11 @@ async function seedData() {
         subscriptionEndDate: faker.date.future()
       });
 
-      // Create psychologists for this organization
+      // Create psychologists for this organization and save each (passwords hashed)
       for (let j = 0; j < PSYCHOLOGISTS_PER_ORG; j++) {
-        const psychologist = new User({
+        const psychologist = await createAndSaveUser({
           name: faker.person.fullName(),
-          email: faker.internet.email().toLowerCase(),
+          email: faker.internet.email().toLowerCase().replace(/@/g, `+org${i}p${j}@`),
           password: STATIC_PASSWORD,
           role: 'psychologist',
           organization: organization._id,
@@ -58,28 +62,27 @@ async function seedData() {
           isActive: true,
           subscriptionEndDate: faker.date.future()
         });
-
-        users.push(psychologist);
+        createdUsersCount++;
         organization.psychologists.push(psychologist._id);
       }
 
-      organizations.push(organization);
+      // link admin -> organization and save both
       admin.organization = organization._id;
-    }
+      await admin.save();
 
-    // Save all users and organizations
-    await User.insertMany(users);
-    await Organization.insertMany(organizations);
+      await organization.save();
+      organizations.push(organization);
+    }
 
     console.log('Seeding completed successfully!');
     console.log(`Created ${organizations.length} organizations`);
-    console.log(`Created ${users.length} users`);
-    console.log(`Static password for all users: ${STATIC_PASSWORD}`);
+    console.log(`Created ${createdUsersCount} users (super_admins preserved)`);
+    console.log(`Static password for all seeded users: ${STATIC_PASSWORD}`);
 
   } catch (error) {
     console.error('Error seeding data:', error);
   } finally {
-    mongoose.disconnect();
+    await mongoose.disconnect();
   }
 }
 
