@@ -1,4 +1,4 @@
 
 export default function AdminDashboard(){
-    return (<>Dashboard</>)
+    return (<>Super Admin Dashboard</>)
 }

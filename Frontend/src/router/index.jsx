@@ -8,6 +8,8 @@ import MainLayout from "../layouts/MainLayout";
 import AdminDashboard from "../pages/AdminDashboard";
 import RequireGuest from "./access/RequireGuest";
 import RequireAuth from "./access/RequireAuth";
+import PsychologistDashboard from "../pages/PsychologistDashboard";
+import OrgAdminDashboard from "../pages/OrgAdminDashboard";
 
 const router = createBrowserRouter([
     {
@@ -43,13 +45,41 @@ const router = createBrowserRouter([
             },
             // Main Layout - for dashboard, profile, settings, etc.
             {
-                path: "superadmin",
+                path: "super",
                 element: <MainLayout />,
                 children: [
                     // Add your main app routes here like:
                     { path: "dashboard", element: (
                         <RequireAuth roles={["super_admin"]}>
                             <AdminDashboard/>
+                        </RequireAuth>
+                    ) },
+                    // { path: "profile", element: <Profile /> },
+                    // { path: "settings", element: <Settings /> },
+                ]
+            },
+            {
+                path: "company",
+                element: <MainLayout />,
+                children: [
+                    // Add your main app routes here like:
+                    { path: "dashboard", element: (
+                        <RequireAuth roles={["company_admin"]}>
+                            <OrgAdminDashboard/>
+                        </RequireAuth>
+                    ) },
+                    // { path: "profile", element: <Profile /> },
+                    // { path: "settings", element: <Settings /> },
+                ]
+            },
+            {
+                path: "psychologist",
+                element: <MainLayout />,
+                children: [
+                    // Add your main app routes here like:
+                    { path: "dashboard", element: (
+                        <RequireAuth roles={["psychologist"]}>
+                            <PsychologistDashboard/>
                         </RequireAuth>
                     ) },
                     // { path: "profile", element: <Profile /> },
