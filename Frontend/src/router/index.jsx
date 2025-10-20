@@ -5,12 +5,14 @@ import Login from "../pages/Login";
 import AuthLayout from "../layouts/AuthLayout";
 import HomeLayout from "../layouts/HomeLayout";
 import MainLayout from "../layouts/MainLayout";
-import AdminDashboard from "../pages/AdminDashboard";
+import AdminDashboard from "../pages/Admin/AdminDashboard";
 import RequireGuest from "./access/RequireGuest";
 import RequireAuth from "./access/RequireAuth";
 import PsychologistDashboard from "../pages/PsychologistDashboard";
 import OrgAdminDashboard from "../pages/OrgAdminDashboard";
 import Organizations from "../pages/Admin/Organizations";
+import DiagnosisList from "../pages/Admin/DiagnosisList";
+import IndividualAccounts from "../pages/Admin/IndividualAccounts";
 
 const router = createBrowserRouter([
     {
@@ -22,11 +24,13 @@ const router = createBrowserRouter([
                 path: "",
                 element: <HomeLayout />,
                 children: [
-                    { path: "", element: (
-                        <RequireGuest>
-                            <Home />
-                        </RequireGuest>
-                    ) }
+                    {
+                        path: "", element: (
+                            <RequireGuest>
+                                <Home />
+                            </RequireGuest>
+                        )
+                    }
                 ]
             },
             // Auth Layout - for login, register, forgot password, etc.
@@ -34,11 +38,13 @@ const router = createBrowserRouter([
                 path: "auth",
                 element: <AuthLayout />,
                 children: [
-                    { path: "login", element: (
-                        <RequireGuest>
-                            <Login />
-                        </RequireGuest>
-                    ) },
+                    {
+                        path: "login", element: (
+                            <RequireGuest>
+                                <Login />
+                            </RequireGuest>
+                        )
+                    },
                     // Add more auth routes here like:
                     // { path: "register", element: <Register /> },
                     // { path: "forgot-password", element: <ForgotPassword /> },
@@ -50,16 +56,34 @@ const router = createBrowserRouter([
                 element: <MainLayout />,
                 children: [
                     // Add your main app routes here like:
-                    { path: "dashboard", element: (
-                        <RequireAuth roles={["super_admin"]}>
-                            <AdminDashboard/>
-                        </RequireAuth>
-                    ) },
-                    { path: "organizations", element: (
-                        <RequireAuth roles={["super_admin"]}>
-                            <Organizations/>
-                        </RequireAuth>
-                    ) },
+                    {
+                        path: "dashboard", element: (
+                            <RequireAuth roles={["super_admin"]}>
+                                <AdminDashboard />
+                            </RequireAuth>
+                        )
+                    },
+                    {
+                        path: "diagnosis", element: (
+                            <RequireAuth roles={["super_admin"]}>
+                                <DiagnosisList />
+                            </RequireAuth>
+                        )
+                    },
+                    {
+                        path: "organizations", element: (
+                            <RequireAuth roles={["super_admin"]}>
+                                <Organizations />
+                            </RequireAuth>
+                        )
+                    },
+                    {
+                        path: "accounts", element: (
+                            <RequireAuth roles={["super_admin"]}>
+                                <IndividualAccounts />
+                            </RequireAuth>
+                        )
+                    },
                     // { path: "profile", element: <Profile /> },
                     // { path: "settings", element: <Settings /> },
                 ]
@@ -69,11 +93,13 @@ const router = createBrowserRouter([
                 element: <MainLayout />,
                 children: [
                     // Add your main app routes here like:
-                    { path: "dashboard", element: (
-                        <RequireAuth roles={["company_admin"]}>
-                            <OrgAdminDashboard/>
-                        </RequireAuth>
-                    ) },
+                    {
+                        path: "dashboard", element: (
+                            <RequireAuth roles={["company_admin"]}>
+                                <OrgAdminDashboard />
+                            </RequireAuth>
+                        )
+                    },
                     // { path: "profile", element: <Profile /> },
                     // { path: "settings", element: <Settings /> },
                 ]
@@ -83,11 +109,13 @@ const router = createBrowserRouter([
                 element: <MainLayout />,
                 children: [
                     // Add your main app routes here like:
-                    { path: "dashboard", element: (
-                        <RequireAuth roles={["psychologist"]}>
-                            <PsychologistDashboard/>
-                        </RequireAuth>
-                    ) },
+                    {
+                        path: "dashboard", element: (
+                            <RequireAuth roles={["psychologist"]}>
+                                <PsychologistDashboard />
+                            </RequireAuth>
+                        )
+                    },
                     // { path: "profile", element: <Profile /> },
                     // { path: "settings", element: <Settings /> },
                 ]
