@@ -23,11 +23,19 @@ import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import QueryStatsOutlinedIcon from '@mui/icons-material/QueryStatsOutlined';
 import AccessTimeOutlinedIcon from '@mui/icons-material/AccessTimeOutlined';
+import LinearProgress from '@mui/material/LinearProgress';
+import GroupIcon from '@mui/icons-material/Group';
 
 const statusColorMap = {
   active: 'success',
   expired: 'warning',
   suspended: 'error',
+};
+
+const getSeatUsageColor = (takenPercentage) => {
+  if (takenPercentage >= 90) return 'error';
+  if (takenPercentage >= 75) return 'warning';
+  return 'success';
 };
 
 const TableList = ({ rows = [], loading, onEdit, onDelete, onViewStats }) => {
@@ -46,73 +54,104 @@ const TableList = ({ rows = [], loading, onEdit, onDelete, onViewStats }) => {
                 <TableRow>
                   <TableCell sx={{ py: 1 }}>Name</TableCell>
                   <TableCell sx={{ py: 1 }}>Admin</TableCell>
+                  <TableCell sx={{ py: 1 }}>Seat Availability</TableCell>
                   <TableCell sx={{ py: 1 }}>Status</TableCell>
                   <TableCell sx={{ py: 1 }}>Ends</TableCell>
                   <TableCell align="right" sx={{ py: 1 }}>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows.map((row, idx) => (
-                  <Zoom in style={{ transitionDelay: `${idx * 25}ms` }} key={row._id || idx}>
-                    <TableRow hover sx={{ transition: 'all 200ms ease', '&:hover': { backgroundColor: (theme) => alpha(theme.palette.primary.light, 0.06) } }}>
-                      <TableCell>
-                        <Stack direction="row" spacing={2} alignItems="center">
-                          <Avatar sx={{ bgcolor: 'primary.main' }}>
-                            {row.name?.[0]?.toUpperCase() || 'O'}
-                          </Avatar>
-                          <Box>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>{row.name}</Typography>
-                            <Typography variant="caption" color="text.secondary">{row.contactEmail || '—'}</Typography>
-                          </Box>
-                        </Stack>
-                      </TableCell>
-                      <TableCell>
-                        {(() => {
-                          const admin = row.admin;
-                          const adminName = typeof admin === 'string' ? admin : (admin?.name || admin?.email || '—');
-                          const adminEmail = typeof admin === 'object' ? (admin?.email || '') : '';
-                          return (
-                            <>
-                              <Typography variant="body2" sx={{ fontWeight: 600 }}>{adminName}</Typography>
-                              <Typography variant="caption" color="text.secondary">{adminEmail || row.contactPhone || '—'}</Typography>
-                            </>
-                          );
-                        })()}
-                      </TableCell>
-                      <TableCell>
-                        <Chip size="small" label={row.subscriptionStatus} color={statusColorMap[row.subscriptionStatus] || 'default'} />
-                      </TableCell>
-                      <TableCell>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <AccessTimeOutlinedIcon fontSize="small" color="action" />
-                          <Typography variant="caption">{row.subscriptionEndDate ? new Date(row.subscriptionEndDate).toLocaleDateString() : '—'}</Typography>
-                        </Stack>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Stack direction="row" spacing={1} justifyContent="flex-end">
-                          <Tooltip title="View stats" arrow>
-                            <IconButton color="primary" onClick={() => onViewStats?.(row)}>
-                              <QueryStatsOutlinedIcon />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Edit" arrow>
-                            <IconButton onClick={() => onEdit?.(row)}>
-                              <EditOutlinedIcon />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Delete" arrow>
-                            <IconButton color="error" onClick={() => onDelete?.(row)}>
-                              <DeleteOutlineIcon />
-                            </IconButton>
-                          </Tooltip>
-                        </Stack>
-                      </TableCell>
-                    </TableRow>
-                  </Zoom>
-                ))}
+                {rows.map((row, idx) => {
+                  const seatsTotal = row.seats_total || row.psychologistSeats || 0;
+                  const seatsTaken = row.seats_taken || (row.psychologists?.length || 0);
+                  const seatsAvailable = row.seats_available || (seatsTotal - seatsTaken);
+                  const usagePercentage = (seatsTaken / seatsTotal) * 100;
+                  const seatUsageColor = getSeatUsageColor(usagePercentage);
+
+                  return (
+                    <Zoom in style={{ transitionDelay: `${idx * 25}ms` }} key={row._id || idx}>
+                      <TableRow hover sx={{ transition: 'all 200ms ease', '&:hover': { backgroundColor: (theme) => alpha(theme.palette.primary.light, 0.06) } }}>
+                        <TableCell>
+                          <Stack direction="row" spacing={2} alignItems="center">
+                            <Avatar sx={{ bgcolor: 'primary.main' }}>
+                              {row.name?.[0]?.toUpperCase() || 'O'}
+                            </Avatar>
+                            <Box>
+                              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>{row.name}</Typography>
+                              <Typography variant="caption" color="text.secondary">{row.contactEmail || '—'}</Typography>
+                            </Box>
+                          </Stack>
+                        </TableCell>
+                        <TableCell>
+                          {(() => {
+                            const admin = row.admin;
+                            const adminName = typeof admin === 'string' ? admin : (admin?.name || admin?.email || '—');
+                            return (
+                              <>
+                                <Typography variant="body2" sx={{ fontWeight: 600 }}>{adminName}</Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {row.psychologistSeats ? `${row.psychologistSeats} seats` : '—'}
+                                </Typography>
+                              </>
+                            );
+                          })()}
+                        </TableCell>
+                        <TableCell>
+                          <Stack spacing={1}>
+                            <Stack direction="row" spacing={1} alignItems="center">
+                              <GroupIcon fontSize="small" color={seatUsageColor} />
+                              <Typography variant="body2">
+                                {seatsTaken}/{seatsTotal} seats used
+                              </Typography>
+                            </Stack>
+                            <Stack spacing={1}>
+                              <LinearProgress 
+                                variant="determinate" 
+                                value={usagePercentage} 
+                                color={seatUsageColor}
+                                sx={{ height: 6, borderRadius: 1 }}
+                              />
+                              <Typography variant="caption" color="text.secondary">
+                                {seatsAvailable} {seatsAvailable === 1 ? 'seat' : 'seats'} available
+                              </Typography>
+                            </Stack>
+                          </Stack>
+                        </TableCell>
+                        <TableCell>
+                          <Chip size="small" label={row.subscriptionStatus} color={statusColorMap[row.subscriptionStatus] || 'default'} />
+                        </TableCell>
+                        <TableCell>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <AccessTimeOutlinedIcon fontSize="small" color="action" />
+                            <Typography variant="caption">{row.subscriptionEndDate ? new Date(row.subscriptionEndDate).toLocaleDateString() : '—'}</Typography>
+                          </Stack>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Stack direction="row" spacing={1} justifyContent="flex-end">
+                            <Tooltip title="View stats" arrow>
+                              <IconButton color="primary" onClick={() => onViewStats?.(row)}>
+                                <QueryStatsOutlinedIcon />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Edit" arrow>
+                              <IconButton onClick={() => onEdit?.(row)}>
+                                <EditOutlinedIcon />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Delete" arrow>
+                              <IconButton color="error" onClick={() => onDelete?.(row)}>
+                                <DeleteOutlineIcon />
+                              </IconButton>
+                            </Tooltip>
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
+                    </Zoom>
+                  );
+                })}
                 {!loading && rows.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} align="center">
+                    <TableCell colSpan={6} align="center">
                       <Typography color="text.secondary">No organizations found.</Typography>
                     </TableCell>
                   </TableRow>

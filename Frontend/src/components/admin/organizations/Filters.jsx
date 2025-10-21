@@ -41,7 +41,7 @@ export default function Filters({ defaultValues = {}, onChange, onReset }) {
                     size="small"
                     value={local.search}
                     onChange={(e) => handleChange('search', e.target.value)}
-                    placeholder="Search by name or email"
+                    placeholder="Search by Organization/Company name"
                     InputProps={{
                         sx: { fontSize: '0.85rem', py: 0.3 }, // smaller text and padding
                         startAdornment: (

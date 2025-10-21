@@ -13,6 +13,7 @@ import {
   setFilters,
   clearMessages
 } from '../store/organizationSlice';
+import { setLoading, displayNotification } from '../store/uiSlice';
 
 const useOrganization = () => {
   const dispatch = useDispatch();
@@ -28,18 +29,48 @@ const useOrganization = () => {
   }, [dispatch]);
 
   const createOrganization = useCallback(async (payload) => {
-    const result = await dispatch(createOrganizationThunk(payload));
-    return result;
+    dispatch(setLoading(true));
+    try {
+      const result = await dispatch(createOrganizationThunk(payload));
+      if (createOrganizationThunk.fulfilled.match(result)) {
+        dispatch(displayNotification({ message: 'Organization created successfully', type: 'success' }));
+      } else {
+        dispatch(displayNotification({ message: result.payload || 'Failed to create organization', type: 'error' }));
+      }
+      return result;
+    } finally {
+      dispatch(setLoading(false));
+    }
   }, [dispatch]);
 
   const updateOrganization = useCallback(async (id, updateData) => {
-    const result = await dispatch(updateOrganizationThunk({ id, updateData }));
-    return result;
+    dispatch(setLoading(true));
+    try {
+      const result = await dispatch(updateOrganizationThunk({ id, updateData }));
+      if (updateOrganizationThunk.fulfilled.match(result)) {
+        dispatch(displayNotification({ message: 'Organization updated successfully', type: 'success' }));
+      } else {
+        dispatch(displayNotification({ message: result.payload || 'Failed to update organization', type: 'error' }));
+      }
+      return result;
+    } finally {
+      dispatch(setLoading(false));
+    }
   }, [dispatch]);
 
   const deleteOrganization = useCallback(async (id) => {
-    const result = await dispatch(deleteOrganizationThunk(id));
-    return result;
+    dispatch(setLoading(true));
+    try {
+      const result = await dispatch(deleteOrganizationThunk(id));
+      if (deleteOrganizationThunk.fulfilled.match(result)) {
+        dispatch(displayNotification({ message: 'Organization deleted successfully', type: 'success' }));
+      } else {
+        dispatch(displayNotification({ message: result.payload || 'Failed to delete organization', type: 'error' }));
+      }
+      return result;
+    } finally {
+      dispatch(setLoading(false));
+    }
   }, [dispatch]);
 
   const updateOrganizationStatus = useCallback(async (id, subscriptionStatus, subscriptionEndDate) => {
