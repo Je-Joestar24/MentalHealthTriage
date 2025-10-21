@@ -30,7 +30,7 @@ export const getAllOrganizations = async (queryParams) => {
   // Calculate pagination
   const skip = (parseInt(page) - 1) * parseInt(limit);
 
-  // Execute query with pagination
+  // Execute query with pagination and add seats information
   const organizations = await Organization.find(filter)
     .populate('admin', 'name email role')
     .populate('psychologists', 'name email role specialization')
@@ -39,11 +39,19 @@ export const getAllOrganizations = async (queryParams) => {
     .limit(parseInt(limit))
     .lean();
 
+  // Transform the organizations to include seats_taken
+  const transformedOrganizations = organizations.map(org => ({
+    ...org,
+    seats_taken: org.psychologists ? org.psychologists.length : 0,
+    seats_available: org.psychologistSeats - (org.psychologists ? org.psychologists.length : 0),
+    seats_total: org.psychologistSeats
+  }));
+
   // Get total count for pagination
   const total = await Organization.countDocuments(filter);
 
   return {
-    organizations,
+    organizations: transformedOrganizations,
     pagination: {
       currentPage: parseInt(page),
       totalPages: Math.ceil(total / parseInt(limit)),
@@ -185,10 +193,12 @@ export const getOrganizationStats = async (organizationId) => {
     subscriptionEndDate: organization.subscriptionEndDate,
     isSubscriptionExpired: organization.isSubscriptionExpired,
     daysRemaining: organization.daysRemaining,
+    psychologistSeats: organization.psychologistSeats,
     stats: {
       psychologists: psychologistCount,
       patients: patientCount,
-      diagnoses: diagnosisCount
+      diagnoses: diagnosisCount,
+      availableSeats: organization.psychologistSeats - psychologistCount
     }
   };
 };
