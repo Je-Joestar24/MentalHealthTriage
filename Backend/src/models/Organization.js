@@ -7,6 +7,8 @@ const OrganizationSchema = new Schema(
     name: { type: String, required: true, trim: true },
     admin: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     psychologists: [{ type: Schema.Types.ObjectId, ref: 'User', index: true }],
+    // Maximum allowed psychologists (seats) for this organization
+    psychologistSeats: { type: Number, default: 4, min: 0 },
     patients: [{ type: Schema.Types.ObjectId, ref: 'Patient', index: true }],
     diagnosisCatalog: [{ type: Schema.Types.ObjectId, ref: 'Diagnosis' }],
     registrationToken: { type: String, default: null },

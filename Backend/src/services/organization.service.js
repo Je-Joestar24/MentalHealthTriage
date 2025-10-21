@@ -99,9 +99,40 @@ export const updateOrganizationStatus = async (organizationId, subscriptionStatu
 };
 
 export const createOrganization = async (organizationData) => {
-  const organization = new Organization(organizationData);
+  // organizationData.admin can be an ObjectId or an object describing a new admin
+  let adminUserId = organizationData.admin;
+
+  if (adminUserId && typeof adminUserId === 'object') {
+    const adminPayload = organizationData.admin;
+    // Create admin user
+    const existing = await User.findOne({ email: adminPayload.email });
+    if (existing) {
+      throw new Error('Admin email already exists');
+    }
+    const adminUser = new User({
+      name: adminPayload.name,
+      email: adminPayload.email.toLowerCase(),
+      password: adminPayload.password,
+      role: 'company_admin',
+      isActive: true,
+    });
+    await adminUser.save();
+    adminUserId = adminUser._id;
+  }
+
+  // Ensure we don't pass the nested admin object into the Organization ctor
+  const { admin: _ignoredAdmin, ...orgRest } = organizationData || {};
+  const organization = new Organization({
+    ...orgRest,
+    admin: adminUserId,
+  });
   await organization.save();
-  
+
+  // Link admin to organization if newly created
+  if (adminUserId && typeof organizationData.admin === 'object') {
+    await User.findByIdAndUpdate(adminUserId, { organization: organization._id });
+  }
+
   return await Organization.findById(organization._id)
     .populate('admin', 'name email role')
     .populate('psychologists', 'name email role specialization')

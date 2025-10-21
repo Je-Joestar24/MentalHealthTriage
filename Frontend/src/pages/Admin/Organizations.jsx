@@ -5,6 +5,8 @@ import useOrganization from '../../hooks/organizationHook';
 import Filters from '../../components/admin/organizations/Filters';
 import { motion } from 'framer-motion';
 import TableList from '../../components/admin/organizations/TableList';
+import AddOrganizationModal from '../../components/admin/organizations/AddOrginizationModal';
+import EditOrganizationModal from '../../components/admin/organizations/EditOrganizationModal';
 import Pagination from '../../components/admin/organizations/Pagination';
 
 const Organizations = () => {
@@ -19,6 +21,10 @@ const Organizations = () => {
     loadOrganizations,
     deleteOrganization,
   } = useOrganization();
+
+  const [openAdd, setOpenAdd] = React.useState(false);
+  const [openEdit, setOpenEdit] = React.useState(false);
+  const [selected, setSelected] = React.useState(null);
 
   const handleApplyFilters = useCallback((next) => {
     updateFilters(next);
@@ -91,6 +97,7 @@ const Organizations = () => {
         </Box>
 
         <Button
+        onClick={() => setOpenAdd(true)}
           variant="contained"
           startIcon={<AddCircleOutlineIcon sx={{ fontSize: 18 }} />}
           component={motion.button}
@@ -124,7 +131,7 @@ const Organizations = () => {
       <TableList
         rows={rows}
         loading={loading}
-        onEdit={(row) => console.log('Edit', row)}
+        onEdit={(row) => { setSelected(row); setOpenEdit(true); }}
         onDelete={handleDelete}
         onViewStats={(row) => console.log('Stats', row)}
       />
@@ -137,6 +144,9 @@ const Organizations = () => {
         total={pagination.total}
         onChange={handlePageChange}
       />
+
+      <AddOrganizationModal open={openAdd} onClose={() => setOpenAdd(false)} />
+      <EditOrganizationModal open={openEdit} onClose={() => setOpenEdit(false)} organization={selected} />
     </Container>
   );
 };

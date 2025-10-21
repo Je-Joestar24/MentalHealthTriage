@@ -44,10 +44,10 @@ export const updateOrganizationStatus = asyncWrapper(async (req, res) => {
   });
 });
 
-// POST /api/admin/organizations - Create new organization
+// POST /api/admin/organizations - Create new organization (supports nested admin creation)
 export const createOrganization = asyncWrapper(async (req, res) => {
   const organizationData = req.body;
-  
+
   // Validate required fields
   if (!organizationData.name || !organizationData.admin) {
     return res.status(400).json({
@@ -56,8 +56,16 @@ export const createOrganization = asyncWrapper(async (req, res) => {
     });
   }
 
+  // If admin is nested object, validate basics
+  if (typeof organizationData.admin === 'object') {
+    const { name, email, password } = organizationData.admin || {};
+    if (!name || !email || !password) {
+      return res.status(400).json({ success: false, error: 'Admin name, email and password are required' });
+    }
+  }
+
   const organization = await organizationService.createOrganization(organizationData);
-  
+
   res.status(201).json({
     success: true,
     data: organization,

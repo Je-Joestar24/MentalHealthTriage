@@ -41,6 +41,7 @@ async function seedData() {
         name: faker.company.name() + ` ${i}`, // reduce collisions for unique index
         admin: admin._id,
         psychologists: [],
+        psychologistSeats: faker.number.int({ min: 5, max: 25 }),
         patients: [],
         diagnosisCatalog: [],
         registrationToken: faker.string.alphanumeric(10),
