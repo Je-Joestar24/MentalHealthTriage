@@ -143,7 +143,13 @@ export const validateOrganizationData = (data) => {
         errors.name = 'Organization name is required';
     }
     
-    if (!data.admin || data.admin.trim() === '') {
+    if (!data.admin) {
+        errors.admin = 'Admin is required';
+    } else if (typeof data.admin === 'object') {
+        if (!data.admin.name || data.admin.name.trim() === '') errors.adminName = 'Admin name is required';
+        if (!data.admin.email || data.admin.email.trim() === '') errors.adminEmail = 'Admin email is required';
+        if (!data.admin.password || data.admin.password.length < 8) errors.adminPassword = 'Admin password must be at least 8 characters';
+    } else if (typeof data.admin === 'string' && data.admin.trim() === '') {
         errors.admin = 'Admin is required';
     }
     
