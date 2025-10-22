@@ -1,6 +1,7 @@
 import Organization from '../models/Organization.js';
 import User from '../models/User.js';
 import Patient from '../models/Patient.js';
+import bcrypt from 'bcryptjs';
 
 export const getAllOrganizations = async (queryParams) => {
   const {
@@ -20,7 +21,12 @@ export const getAllOrganizations = async (queryParams) => {
   }
   
   if (subscriptionStatus) {
-    filter.subscriptionStatus = subscriptionStatus;
+    if (subscriptionStatus === 'expired') {
+      // For expired status, filter by organizations past their end date
+      filter.subscriptionEndDate = { $lt: new Date() };
+    } else {
+      filter.subscriptionStatus = subscriptionStatus;
+    }
   }
 
   // Build sort object
@@ -39,13 +45,21 @@ export const getAllOrganizations = async (queryParams) => {
     .limit(parseInt(limit))
     .lean();
 
-  // Transform the organizations to include seats_taken
-  const transformedOrganizations = organizations.map(org => ({
-    ...org,
-    seats_taken: org.psychologists ? org.psychologists.length : 0,
-    seats_available: org.psychologistSeats - (org.psychologists ? org.psychologists.length : 0),
-    seats_total: org.psychologistSeats
-  }));
+  // Transform the organizations to include seats_taken and effective status
+  const transformedOrganizations = organizations.map(org => {
+    // Calculate effective status (expired if past end date)
+    const isExpired = org.subscriptionEndDate && new Date() > new Date(org.subscriptionEndDate);
+    const effectiveStatus = isExpired ? 'expired' : org.subscriptionStatus;
+    
+    return {
+      ...org,
+      seats_taken: org.psychologists ? org.psychologists.length : 0,
+      seats_available: org.psychologistSeats - (org.psychologists ? org.psychologists.length : 0),
+      seats_total: org.psychologistSeats,
+      effectiveStatus,
+      isSubscriptionExpired: isExpired
+    };
+  });
 
   // Get total count for pagination
   const total = await Organization.countDocuments(filter);
@@ -75,14 +89,22 @@ export const getOrganizationById = async (organizationId) => {
     throw new Error('Organization not found');
   }
 
-  return organization;
+  // Calculate effective status (expired if past end date)
+  const isExpired = organization.subscriptionEndDate && new Date() > new Date(organization.subscriptionEndDate);
+  const effectiveStatus = isExpired ? 'expired' : organization.subscriptionStatus;
+
+  return {
+    ...organization,
+    effectiveStatus,
+    isSubscriptionExpired: isExpired
+  };
 };
 
 export const updateOrganizationStatus = async (organizationId, subscriptionStatus, subscriptionEndDate = null) => {
-  const validStatuses = ['active', 'inactive', 'expired'];
+  const validStatuses = ['active', 'inactive'];
   
   if (!validStatuses.includes(subscriptionStatus)) {
-    throw new Error('Invalid subscription status. Must be one of: active, inactive, expired');
+    throw new Error('Invalid subscription status. Must be one of: active, inactive');
   }
 
   const updateData = { subscriptionStatus };
@@ -148,9 +170,39 @@ export const createOrganization = async (organizationData) => {
 };
 
 export const updateOrganization = async (organizationId, updateData) => {
+  let finalUpdateData = { ...updateData };
+  
+  // Handle admin updates separately if provided
+  if (updateData.admin && typeof updateData.admin === 'object') {
+    const adminData = updateData.admin;
+    const organization = await Organization.findById(organizationId).populate('admin');
+    
+    if (!organization) {
+      throw new Error('Organization not found');
+    }
+
+    // Update admin user if exists
+    if (organization.admin) {
+      const adminUpdateData = {};
+      if (adminData.name) adminUpdateData.name = adminData.name;
+      if (adminData.email) adminUpdateData.email = adminData.email.toLowerCase();
+      if (adminData.password) {
+        // Hash the password before updating
+        const salt = await bcrypt.genSalt(10);
+        adminUpdateData.password = await bcrypt.hash(adminData.password, salt);
+      }
+      
+      await User.findByIdAndUpdate(organization.admin._id, adminUpdateData);
+    }
+    
+    // Remove admin from updateData to avoid conflicts with Organization model
+    const { admin, ...orgUpdateData } = updateData;
+    finalUpdateData = orgUpdateData;
+  }
+
   const organization = await Organization.findByIdAndUpdate(
     organizationId,
-    updateData,
+    finalUpdateData,
     { new: true, runValidators: true }
   ).populate('admin', 'name email role')
    .populate('psychologists', 'name email role specialization')
@@ -161,7 +213,15 @@ export const updateOrganization = async (organizationId, updateData) => {
     throw new Error('Organization not found');
   }
 
-  return organization;
+  // Calculate effective status (expired if past end date)
+  const isExpired = organization.subscriptionEndDate && new Date() > new Date(organization.subscriptionEndDate);
+  const effectiveStatus = isExpired ? 'expired' : organization.subscriptionStatus;
+
+  return {
+    ...organization,
+    effectiveStatus,
+    isSubscriptionExpired: isExpired
+  };
 };
 
 export const deleteOrganization = async (organizationId) => {
