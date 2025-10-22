@@ -13,7 +13,7 @@ import {
   setFilters,
   clearMessages
 } from '../store/organizationSlice';
-import { setLoading, displayNotification } from '../store/uiSlice';
+import { setLoading, displayNotification, showGlobalDialog } from '../store/uiSlice';
 
 const useOrganization = () => {
   const dispatch = useDispatch();
@@ -35,7 +35,9 @@ const useOrganization = () => {
       if (createOrganizationThunk.fulfilled.match(result)) {
         dispatch(displayNotification({ message: 'Organization created successfully', type: 'success' }));
       } else {
-        dispatch(displayNotification({ message: result.payload || 'Failed to create organization', type: 'error' }));
+        const errorMessage = typeof result.payload === 'string' ? result.payload : 
+                           (result.payload?.message || 'Failed to create organization');
+        dispatch(displayNotification({ message: errorMessage, type: 'error' }));
       }
       return result;
     } finally {
@@ -50,7 +52,9 @@ const useOrganization = () => {
       if (updateOrganizationThunk.fulfilled.match(result)) {
         dispatch(displayNotification({ message: 'Organization updated successfully', type: 'success' }));
       } else {
-        dispatch(displayNotification({ message: result.payload || 'Failed to update organization', type: 'error' }));
+        const errorMessage = typeof result.payload === 'string' ? result.payload : 
+                           (result.payload?.message || 'Failed to update organization');
+        dispatch(displayNotification({ message: errorMessage, type: 'error' }));
       }
       return result;
     } finally {
@@ -65,13 +69,32 @@ const useOrganization = () => {
       if (deleteOrganizationThunk.fulfilled.match(result)) {
         dispatch(displayNotification({ message: 'Organization deleted successfully', type: 'success' }));
       } else {
-        dispatch(displayNotification({ message: result.payload || 'Failed to delete organization', type: 'error' }));
+        const errorMessage = typeof result.payload === 'string' ? result.payload : 
+                           (result.payload?.message || 'Failed to delete organization');
+        dispatch(displayNotification({ message: errorMessage, type: 'error' }));
       }
       return result;
     } finally {
       dispatch(setLoading(false));
     }
   }, [dispatch]);
+
+  const confirmDeleteOrganization = useCallback((organization, onConfirm) => {
+    dispatch(showGlobalDialog({
+      type: 'danger',
+      title: 'Delete Organization',
+      message: `Are you sure you want to delete "${organization.name}"? This action cannot be undone and will remove all associated data.`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      onConfirm: () => {
+        deleteOrganization(organization._id);
+        if (onConfirm) onConfirm();
+      },
+      onCancel: () => {
+        // Optional: handle cancel action
+      }
+    }));
+  }, [dispatch, deleteOrganization]);
 
   const updateOrganizationStatus = useCallback(async (id, subscriptionStatus, subscriptionEndDate) => {
     const result = await dispatch(updateOrganizationStatusThunk({ id, subscriptionStatus, subscriptionEndDate }));
@@ -123,6 +146,7 @@ const useOrganization = () => {
     createOrganization,
     updateOrganization,
     deleteOrganization,
+    confirmDeleteOrganization,
     updateOrganizationStatus,
     extendSubscription,
     loadOrganizationStats,

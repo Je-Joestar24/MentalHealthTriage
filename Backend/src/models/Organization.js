@@ -14,7 +14,7 @@ const OrganizationSchema = new Schema(
     registrationToken: { type: String, default: null },
     subscriptionStatus: { 
       type: String, 
-      enum: ['active', 'inactive', 'expired'], 
+      enum: ['active', 'inactive'], 
       default: 'active',
       index: true 
     },
@@ -37,6 +37,14 @@ OrganizationSchema.index({ name: 1 }, { unique: true, sparse: true });
 // Virtual field to check if subscription is expired
 OrganizationSchema.virtual('isSubscriptionExpired').get(function() {
   return new Date() > this.subscriptionEndDate;
+});
+
+// Virtual field to get the effective status (includes automatic expiration)
+OrganizationSchema.virtual('effectiveStatus').get(function() {
+  if (this.isSubscriptionExpired) {
+    return 'expired';
+  }
+  return this.subscriptionStatus;
 });
 
 // Virtual field to get days remaining in subscription

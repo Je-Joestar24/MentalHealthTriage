@@ -19,7 +19,7 @@ const Organizations = () => {
     pagination,
     updateFilters,
     loadOrganizations,
-    deleteOrganization,
+    confirmDeleteOrganization,
   } = useOrganization();
 
   const [openAdd, setOpenAdd] = React.useState(false);
@@ -41,10 +41,11 @@ const Organizations = () => {
     loadOrganizations(next);
   }, [filters, loadOrganizations]);
 
-  const handleDelete = useCallback(async (row) => {
-    await deleteOrganization(row._id);
-    loadOrganizations(filters);
-  }, [deleteOrganization, loadOrganizations, filters]);
+  const handleDelete = useCallback((row) => {
+    confirmDeleteOrganization(row, () => {
+      loadOrganizations(filters);
+    });
+  }, [confirmDeleteOrganization, loadOrganizations, filters]);
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>

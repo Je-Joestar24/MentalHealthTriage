@@ -29,7 +29,7 @@ import GroupIcon from '@mui/icons-material/Group';
 const statusColorMap = {
   active: 'success',
   expired: 'warning',
-  suspended: 'error',
+  inactive: 'error',
 };
 
 const getSeatUsageColor = (takenPercentage) => {
@@ -67,6 +67,11 @@ const TableList = ({ rows = [], loading, onEdit, onDelete, onViewStats }) => {
                   const seatsAvailable = row.seats_available || (seatsTotal - seatsTaken);
                   const usagePercentage = (seatsTaken / seatsTotal) * 100;
                   const seatUsageColor = getSeatUsageColor(usagePercentage);
+                  
+                  // Determine effective status (expired if past end date)
+                  const effectiveStatus = row.effectiveStatus || 
+                    (row.subscriptionEndDate && new Date() < new Date(row.subscriptionEndDate) ? 'expired' : row.subscriptionStatus);
+                  console.log((new Date()), (new Date(row.subscriptionEndDate)))
 
                   return (
                     <Zoom in style={{ transitionDelay: `${idx * 25}ms` }} key={row._id || idx}>
@@ -118,7 +123,7 @@ const TableList = ({ rows = [], loading, onEdit, onDelete, onViewStats }) => {
                           </Stack>
                         </TableCell>
                         <TableCell>
-                          <Chip size="small" label={row.subscriptionStatus} color={statusColorMap[row.subscriptionStatus] || 'default'} />
+                          <Chip size="small" label={effectiveStatus} color={statusColorMap[effectiveStatus] || 'default'} />
                         </TableCell>
                         <TableCell>
                           <Stack direction="row" spacing={1} alignItems="center">

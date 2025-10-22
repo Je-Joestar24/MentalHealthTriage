@@ -204,7 +204,7 @@ export default function RightPanel() {
 
                             {error && (
                                 <Typography role="alert" aria-live="polite" color="error" sx={{ mb: 2 }}>
-                                    {error}
+                                    {typeof error === 'string' ? error : (error?.message || 'An error occurred')}
                                 </Typography>
                             )}
 

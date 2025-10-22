@@ -7,6 +7,7 @@ import Sidebar from '../components/sidebar/sidebar';
 import NavHeader from '../components/sidebar/NavHeader';
 import Loading from '../components/notify/Loading';
 import Response from '../components/notify/Response';
+import GlobalDialog from '../components/dialogbox/GlobalDialog';
 
 const MainLayout = () => {
   const { logout, loading, user } = useUser();
@@ -81,6 +82,7 @@ const MainLayout = () => {
       
       <Loading />
       <Response />
+      <GlobalDialog />
     </Box>
   );
 };
