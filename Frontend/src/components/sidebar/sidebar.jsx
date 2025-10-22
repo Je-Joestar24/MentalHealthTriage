@@ -1,71 +1,156 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Box, Stack, Typography, ButtonBase, Divider, IconButton, Tooltip } from '@mui/material';
+import { 
+  Box, 
+  Stack, 
+  Typography, 
+  ButtonBase, 
+  Divider,
+  useTheme,
+  useMediaQuery,
+  Drawer,
+  List,
+  ListItem
+} from '@mui/material';
 import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
 import InsightsOutlinedIcon from '@mui/icons-material/InsightsOutlined';
 import GroupOutlinedIcon from '@mui/icons-material/GroupOutlined';
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined';
-import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined';
+import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
 
-const NavItem = ({ to, icon: Icon, label }) => (
+const NavItem = ({ to, icon: Icon, label, onClick }) => (
   <ButtonBase
     component={NavLink}
     to={to}
+    onClick={onClick}
     sx={{
       width: '100%',
       borderRadius: 2,
-      px: 1.5,
-      py: 1,
+      px: 2,
+      py: 1.5,
       justifyContent: 'flex-start',
       transition: 'all 200ms ease',
+      mb: 0.5,
       '&.active': {
-        bgcolor: (theme) => theme.palette.primary.light,
+        bgcolor: (theme) => theme.palette.primary.main,
         color: 'white',
+        '& .MuiSvgIcon-root': {
+          color: 'white',
+        },
       },
       '&:hover': {
         bgcolor: (theme) => theme.palette.action.hover,
+        transform: 'translateX(4px)',
       },
     }}
   >
-    <Stack direction="row" spacing={1.5} alignItems="center">
-      <Icon />
-      <Typography variant="body1" sx={{ fontWeight: 600 }}>{label}</Typography>
+    <Stack direction="row" spacing={2} alignItems="center">
+      <Icon sx={{ fontSize: 20 }} />
+      <Typography variant="body1" sx={{ fontWeight: 500 }}>{label}</Typography>
     </Stack>
   </ButtonBase>
 );
 
-const Sidebar = ({ onLogout }) => {
-  return (
+const Sidebar = ({ mobileOpen, onMobileClose }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
+  const navigationItems = [
+    { to: "/super/dashboard", icon: DashboardOutlinedIcon, label: "Dashboard" },
+    { to: "/super/organizations", icon: GroupOutlinedIcon, label: "Organizations" },
+    { to: "/super/diagnosis", icon: InsightsOutlinedIcon, label: "Diagnosis List" },
+    { to: "/super/accounts", icon: PersonOutlinedIcon, label: "Individual Accounts" },
+    { to: "/super/reports", icon: AssessmentOutlinedIcon, label: "Reports" },
+  ];
+
+  const sidebarContent = (
     <Box sx={{
       width: 280,
-      height: '100vh',
-      position: 'sticky',
-      top: 0,
+      height: '100%',
       display: 'flex',
       flexDirection: 'column',
-      borderRight: (theme) => `1px solid ${theme.palette.divider}`,
       bgcolor: 'background.paper',
-      p: 2,
+      borderRight: (theme) => `1px solid ${theme.palette.divider}`,
     }}>
-      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 2 }}>
-        <Box component="span" sx={{ width: 36, height: 36, borderRadius: '10px', bgcolor: 'primary.main', display: 'inline-block' }} />
-        <Typography variant="h6">MHT Admin</Typography>
-      </Stack>
-      <Divider sx={{ mb: 2 }} />
+      {/* Navigation Items */}
+      <Box sx={{ p: 3, flex: 1 }}>
+        <Typography 
+          variant="overline" 
+          sx={{ 
+            color: 'text.secondary',
+            fontWeight: 600,
+            letterSpacing: 1,
+            mb: 2,
+            display: 'block'
+          }}
+        >
+          Navigation
+        </Typography>
+        
+        <Stack spacing={0.5}>
+          {navigationItems.map((item) => (
+            <NavItem
+              key={item.to}
+              to={item.to}
+              icon={item.icon}
+              label={item.label}
+              onClick={isMobile ? onMobileClose : undefined}
+            />
+          ))}
+        </Stack>
+      </Box>
 
-      <Stack spacing={1} sx={{ flex: 1 }}>
-        <NavItem to="/super/dashboard" icon={DashboardOutlinedIcon} label="Dashboard" />
-        <NavItem to="/super/diagnosis" icon={InsightsOutlinedIcon} label="Diagnosis list" />
-        <NavItem to="/super/organizations" icon={GroupOutlinedIcon} label="Organizations" />
-        <NavItem to="/super/accounts" icon={PersonOutlinedIcon} label="Individual accounts" />
-      </Stack>
+      {/* Footer */}
+      <Box sx={{ p: 3, borderTop: (theme) => `1px solid ${theme.palette.divider}` }}>
+        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+          HealthTriage Admin Panel
+        </Typography>
+        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+          Version 1.0.0
+        </Typography>
+      </Box>
+    </Box>
+  );
 
-      <Divider sx={{ my: 2 }} />
-      <Tooltip title="Logout" placement="right">
-        <IconButton color="error" onClick={onLogout} sx={{ alignSelf: 'flex-start' }}>
-          <LogoutOutlinedIcon />
-        </IconButton>
-      </Tooltip>
+  if (isMobile) {
+    return (
+      <Drawer
+        variant="temporary"
+        open={mobileOpen}
+        onClose={onMobileClose}
+        ModalProps={{
+          keepMounted: true, // Better open performance on mobile.
+        }}
+        sx={{
+          display: { xs: 'block', md: 'none' },
+          '& .MuiDrawer-paper': {
+            boxSizing: 'border-box',
+            width: 280,
+            border: 'none',
+            boxShadow: '0 0 20px rgba(0,0,0,0.1)',
+          },
+        }}
+      >
+        {sidebarContent}
+      </Drawer>
+    );
+  }
+
+  return (
+    <Box
+      sx={{
+        width: 280,
+        flexShrink: 0,
+        display: { xs: 'none', md: 'block' },
+        position: 'fixed',
+        top: 64, // Below the header
+        left: 0,
+        height: 'calc(100vh - 64px)',
+        overflow: 'hidden',
+        zIndex: theme.zIndex.drawer,
+      }}
+    >
+      {sidebarContent}
     </Box>
   );
 };
