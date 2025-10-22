@@ -101,7 +101,7 @@ const GlobalDialog = () => {
       </DialogTitle>
 
       <DialogContent sx={{ pt: 1 }}>
-        <Typography variant="body1" color="text.secondary">
+        <Typography variant="body2" color="text.secondary">
           {globalDialog.message}
         </Typography>
       </DialogContent>
@@ -111,7 +111,8 @@ const GlobalDialog = () => {
           <Button
             onClick={handleCancel}
             variant="outlined"
-            size="medium"
+            size="small"
+            sx={{ px: 1.5, py: .5 }}
           >
             {globalDialog.cancelText}
           </Button>
@@ -119,7 +120,8 @@ const GlobalDialog = () => {
             onClick={handleConfirm}
             variant="contained"
             color={getButtonColor()}
-            size="medium"
+            size="small"
+            sx={{ px: 1.5, py: .5 }}
           >
             {globalDialog.confirmText}
           </Button>
