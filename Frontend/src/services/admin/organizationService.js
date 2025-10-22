@@ -3,7 +3,7 @@ import api from '../../api/axios';
 // Get all organizations with pagination and filtering
 export const getAllOrganizations = async (params = {}) => {
     try {
-        const qp = { page: 1, limit: 10, ...params };
+        const qp = { page: 1, limit: 5, ...params };
         
         // Handle status filtering - only add subscriptionStatus if status is not 'all' or empty
         if (qp.status && qp.status !== '' && qp.status !== 'all') {
@@ -18,7 +18,7 @@ export const getAllOrganizations = async (params = {}) => {
             page: p.currentPage ?? qp.page ?? 1,
             pages: p.totalPages ?? 0,
             total: p.totalItems ?? 0,
-            limit: p.itemsPerPage ?? qp.limit ?? 10,
+            limit: p.itemsPerPage ?? qp.limit ?? 5,
         };
         return { success: true, data: data.data, pagination };
     } catch (error) {

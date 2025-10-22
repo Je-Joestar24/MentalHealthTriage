@@ -20,7 +20,7 @@ const useOrganization = () => {
   const organizationState = useSelector((state) => state.organization);
 
   const loadOrganizations = useCallback((params = {}) => {
-    const qp = { page: 1, limit: 10, ...organizationState.filters, ...params };
+    const qp = { page: 1, limit: 5, ...organizationState.filters, ...params };
     dispatch(fetchOrganizations(qp));
   }, [dispatch, organizationState.filters]);
 
@@ -106,7 +106,7 @@ const useOrganization = () => {
   useEffect(() => {
     // Initial load
     if (!rows.length) {
-      dispatch(fetchOrganizations({ page: 1, limit: 10, ...organizationState.filters }));
+      dispatch(fetchOrganizations({ page: 1, limit: 5, ...organizationState.filters }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
