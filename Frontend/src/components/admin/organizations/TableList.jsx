@@ -134,7 +134,7 @@ const TableList = ({ rows = [], loading, onEdit, onDelete, onViewStats }) => {
                         <TableCell align="right">
                           <Stack direction="row" spacing={1} justifyContent="flex-end">
                             <Tooltip title="View stats" arrow>
-                              <IconButton color="primary" onClick={() => onViewStats?.(row)}>
+                              <IconButton disabled color="primary" onClick={() => onViewStats?.(row)}>
                                 <QueryStatsOutlinedIcon />
                               </IconButton>
                             </Tooltip>

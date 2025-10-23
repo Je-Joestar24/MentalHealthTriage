@@ -1,0 +1,29 @@
+import express from 'express';
+import { authenticateToken, requireSuperAdmin } from '../middleware/auth.middleware.js';
+import * as diagnosisController from '../controllers/diagnosis.controller.js';
+
+const router = express.Router();
+
+// Protect all routes
+router.use(authenticateToken);
+router.use(requireSuperAdmin);
+
+// GET /api/diagnoses - Get all diagnoses with pagination and filtering
+router.get('/', diagnosisController.getAllDiagnoses);
+
+// GET /api/diagnoses/:id - Get single diagnosis
+router.get('/:id', diagnosisController.getDiagnosisById);
+
+// POST /api/diagnoses - Create new diagnosis
+router.post('/', diagnosisController.createDiagnosis);
+
+// PUT /api/diagnoses/:id - Update diagnosis
+router.put('/:id', diagnosisController.updateDiagnosis);
+
+// DELETE /api/diagnoses/:id - Delete diagnosis
+router.delete('/:id', diagnosisController.deleteDiagnosis);
+
+// POST /api/diagnoses/bulk-import - Bulk import diagnoses
+router.post('/bulk-import', diagnosisController.bulkImportDiagnoses);
+
+export default router;
