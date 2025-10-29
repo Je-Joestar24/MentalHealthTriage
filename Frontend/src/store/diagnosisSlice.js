@@ -112,6 +112,8 @@ const initialState = {
     success: null,
     filters: {
         search: '',
+        system: '',
+        type: '',
         sortBy: 'createdAt',
         sortOrder: 'desc'
     }

@@ -16,10 +16,18 @@ const useDiagnosis = () => {
   const dispatch = useDispatch();
   const diagnosisState = useSelector((state) => state.diagnosis);
 
+  const sanitizeFilters = useCallback((input) => {
+    const next = { ...input };
+    if (next.system === 'all') next.system = '';
+    if (next.type === 'all') next.type = '';
+    return next;
+  }, []);
+
   const loadDiagnoses = useCallback((params = {}) => {
-    const qp = { page: 1, limit: 10, ...diagnosisState.filters, ...params };
+    const merged = { page: 1, limit: 10, ...diagnosisState.filters, ...params };
+    const qp = sanitizeFilters(merged);
     dispatch(fetchDiagnoses(qp));
-  }, [dispatch, diagnosisState.filters]);
+  }, [dispatch, diagnosisState.filters, sanitizeFilters]);
 
   const loadDiagnosis = useCallback((id) => {
     dispatch(fetchDiagnosisById(id));
@@ -109,8 +117,8 @@ const useDiagnosis = () => {
   }, [dispatch]);
 
   const updateFilters = useCallback((newFilters) => {
-    dispatch(setFilters(newFilters));
-  }, [dispatch]);
+    dispatch(setFilters(sanitizeFilters(newFilters)));
+  }, [dispatch, sanitizeFilters]);
 
   const clearAllMessages = useCallback(() => {
     dispatch(clearMessages());
@@ -122,7 +130,7 @@ const useDiagnosis = () => {
 
   useEffect(() => {
     if (!rows.length) {
-      dispatch(fetchDiagnoses({ page: 1, limit: 10, ...diagnosisState.filters }));
+      dispatch(fetchDiagnoses(sanitizeFilters({ page: 1, limit: 10, ...diagnosisState.filters })));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
