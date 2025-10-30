@@ -88,7 +88,7 @@ async function seedData() {
 }
 
 // Connect to MongoDB and run seeder
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/mental-health-triage')
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/mentalhealthtriage')
   .then(() => {
     console.log('Connected to MongoDB');
     seedData();
