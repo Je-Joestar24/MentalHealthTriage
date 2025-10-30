@@ -8,7 +8,8 @@ import {
   deleteDiagnosis as deleteDiagnosisThunk,
   bulkImportDiagnoses as bulkImportDiagnosesThunk,
   setFilters,
-  clearMessages
+  clearMessages,
+  fetchSymptoms
 } from '../store/diagnosisSlice';
 import { setLoading, displayNotification, showGlobalDialog } from '../store/uiSlice';
 
@@ -124,6 +125,11 @@ const useDiagnosis = () => {
     dispatch(clearMessages());
   }, [dispatch]);
 
+  const loadSymptoms = useCallback(() => {
+    dispatch(fetchSymptoms());
+  }, [dispatch]);
+  const symptoms = diagnosisState.symptoms;
+
   const pagination = diagnosisState.pagination;
 
   const rows = useMemo(() => diagnosisState.diagnoses || [], [diagnosisState.diagnoses]);
@@ -140,6 +146,7 @@ const useDiagnosis = () => {
     ...diagnosisState,
     rows,
     pagination,
+    symptoms,
 
     // actions
     loadDiagnoses,
@@ -150,7 +157,8 @@ const useDiagnosis = () => {
     confirmDeleteDiagnosis,
     bulkImportDiagnoses,
     updateFilters,
-    clearAllMessages
+    clearAllMessages,
+    loadSymptoms
   };
 };
 

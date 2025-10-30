@@ -33,8 +33,10 @@ const DEFAULT_SUGGESTIONS = [
     'appetite_changes'
 ];
 
+const prettyToSnake = (pretty = '') => String(pretty).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').replace(/_+/g, '_');
+
 export default function DiagnosisAddModal({ open, onClose, onCreated }) {
-    const { createDiagnosis, loadDiagnoses, pagination, filters } = useDiagnosis();
+    const { createDiagnosis, loadDiagnoses, pagination, filters, loadSymptoms, symptoms: suggestionList } = useDiagnosis();
     const { user } = useUser();
     const [form, setForm] = useState(DEFAULT_FORM);
     const [submitting, setSubmitting] = useState(false);
@@ -49,7 +51,20 @@ export default function DiagnosisAddModal({ open, onClose, onCreated }) {
         }
     }, [open]);
 
-    const suggestions = useMemo(() => DEFAULT_SUGGESTIONS, []);
+    useEffect(() => {
+        if (open && (!suggestionList || suggestionList.length === 0)) {
+            loadSymptoms();
+        }
+    }, [open]);
+
+    // suggestions for autocomplete:
+    const suggestions = useMemo(() => {
+        // combine backend suggestions (prettified) and fallback DEFAULT_SUGGESTIONS
+        const backend = (suggestionList || []).map(prettyToSnake);
+        const fallback = DEFAULT_SUGGESTIONS.map(prettyToSnake);
+        // Remove duplicates
+        return Array.from(new Set([...backend, ...fallback]));
+    }, [suggestionList]);
 
     const handleChange = useCallback((key, value) => {
         setForm((prev) => ({ ...prev, [key]: value }));

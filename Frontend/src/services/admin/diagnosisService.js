@@ -77,4 +77,15 @@ export const bulkImportDiagnoses = async (bulkPayload) => {
     }
 };
 
+// Get all symptoms (pretty, for suggestions)
+export const getAllSymptoms = async () => {
+    try {
+        const { data } = await api.get('/api/diagnoses/symptoms/fetch');
+        return { success: true, data: data.data };
+    } catch (error) {
+        const message = error?.response?.data?.error || error.message || 'Failed to load symptoms';
+        return { success: false, error: message };
+    }
+};
+
 

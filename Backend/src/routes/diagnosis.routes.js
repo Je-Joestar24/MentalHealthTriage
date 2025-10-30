@@ -26,4 +26,7 @@ router.delete('/:id', diagnosisController.deleteDiagnosis);
 // POST /api/diagnoses/bulk-import - Bulk import diagnoses
 router.post('/bulk-import', diagnosisController.bulkImportDiagnoses);
 
+// GET /api/symptoms - List all symptoms (prettified, for form suggestions)
+router.get('/symptoms/fetch', diagnosisController.getAllSymptoms);
+
 export default router;

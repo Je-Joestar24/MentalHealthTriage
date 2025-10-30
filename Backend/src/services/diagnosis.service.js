@@ -1,5 +1,26 @@
 import Diagnosis from '../models/Diagnosis.js';
 import mongoose from 'mongoose';
+import Symptom from '../models/Symptoms.js';
+
+// Utility: converts snake_case (or kebab-case) to pretty form (Depressed mood)
+function toPrettySymptom(raw) {
+  if (!raw) return '';
+  // Remove # if present, split by underscores, capitalize first word
+  let s = raw.trim().replace(/^#+/, '').replace(/[-_]+/g, ' ');
+  s = s.replace(/\s+/g, ' ').toLowerCase();
+  return s.replace(/^\w/, (c) => c.toUpperCase());
+}
+
+async function upsertSymptoms(symptoms) {
+  if (!symptoms || !Array.isArray(symptoms)) return;
+  const prettyList = symptoms.map(toPrettySymptom);
+  const ops = prettyList.filter(Boolean).map((name) => ({ updateOne: { filter: { name }, update: { $setOnInsert: { name } }, upsert: true } }));
+  if (ops.length) {
+    try {
+      await Symptom.bulkWrite(ops, { ordered: false });
+    } catch (e) {/* ignore dupe errors */}
+  }
+}
 
 export async function getAllDiagnoses(queryParams = {}) {
   const {
@@ -100,6 +121,7 @@ export async function createDiagnosis(diagnosisData) {
 
   const diagnosis = new Diagnosis(diagnosisData);
   await diagnosis.save();
+  await upsertSymptoms(diagnosisData.symptoms);
   return diagnosis;
 }
 
@@ -130,7 +152,7 @@ export async function updateDiagnosis(id, updateData) {
     { $set: updateData },
     { new: true, runValidators: true }
   );
-
+  await upsertSymptoms(updateData.symptoms);
   if (!diagnosis) {
     throw new Error('Diagnosis not found');
   }
@@ -194,6 +216,13 @@ export async function bulkImportDiagnoses(diagnosesData, userId) {
     };
   });
 
+  await upsertSymptoms([].concat(...diagnoses.map(d => d.symptoms || [])));
   return await Diagnosis.insertMany(diagnoses, { ordered: false });
+}
+
+export async function getAllSymptoms() {
+  // Returns array of symptom names, prettified (sorted alphabetically)
+  const result = await Symptom.find({}, { name: 1, _id: 0 }).sort({ name: 1 });
+  return result.map(r => r.name);
 }
 
