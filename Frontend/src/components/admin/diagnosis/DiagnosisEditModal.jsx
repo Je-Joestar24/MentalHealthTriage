@@ -19,8 +19,10 @@ const DEFAULT_SUGGESTIONS = [
   'appetite_changes'
 ];
 
+const prettyToSnake = (pretty = '') => String(pretty).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').replace(/_+/g, '_');
+
 export default function DiagnosisEditModal({ open, onClose, data, onUpdated }) {
-  const { updateDiagnosis } = useDiagnosis();
+  const { updateDiagnosis, loadSymptoms, symptoms: suggestionList } = useDiagnosis();
   const [form, setForm] = useState({
     name: '',
     system: 'DSM-5',
@@ -37,7 +39,11 @@ export default function DiagnosisEditModal({ open, onClose, data, onUpdated }) {
   });
   const [submitting, setSubmitting] = useState(false);
   const [symptomInput, setSymptomInput] = useState('');
-  const suggestions = useMemo(() => DEFAULT_SUGGESTIONS, []);
+  const suggestions = useMemo(() => {
+    const backend = (suggestionList || []).map(prettyToSnake);
+    const fallback = DEFAULT_SUGGESTIONS.map(prettyToSnake);
+    return Array.from(new Set([...backend, ...fallback]));
+  }, [suggestionList]);
 
   const hasDualCodes = useMemo(
     () => Boolean(data?.dsm5Code || data?.icd10Code),
@@ -72,6 +78,12 @@ export default function DiagnosisEditModal({ open, onClose, data, onUpdated }) {
       setSymptomInput('');
     }
   }, [open, data]);
+
+  useEffect(() => {
+    if (open && (!suggestionList || suggestionList.length === 0)) {
+      loadSymptoms();
+    }
+  }, [open ]);
 
   const handleChange = useCallback((key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));

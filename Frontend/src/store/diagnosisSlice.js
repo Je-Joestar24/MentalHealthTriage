@@ -98,6 +98,22 @@ export const bulkImportDiagnoses = createAsyncThunk(
     }
 );
 
+export const fetchSymptoms = createAsyncThunk(
+    'diagnosis/fetchSymptoms',
+    async (_, { rejectWithValue }) => {
+        try {
+            const result = await diagnosisService.getAllSymptoms();
+            if (result.success) {
+                return result.data;
+            } else {
+                return rejectWithValue(result.error);
+            }
+        } catch (error) {
+            return rejectWithValue(error.message || 'Failed to load symptoms');
+        }
+    }
+);
+
 const initialState = {
     diagnoses: [],
     currentDiagnosis: null,
@@ -116,7 +132,8 @@ const initialState = {
         type: '',
         sortBy: 'createdAt',
         sortOrder: 'desc'
-    }
+    },
+    symptoms: [] // add to state
 };
 
 const diagnosisSlice = createSlice({
@@ -242,6 +259,20 @@ const diagnosisSlice = createSlice({
                 state.error = null;
             })
             .addCase(bulkImportDiagnoses.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+            })
+            // Fetch symptoms
+            .addCase(fetchSymptoms.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(fetchSymptoms.fulfilled, (state, action) => {
+                state.loading = false;
+                state.symptoms = action.payload;
+                state.error = null;
+            })
+            .addCase(fetchSymptoms.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
             });
