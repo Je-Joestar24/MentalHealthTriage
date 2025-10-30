@@ -7,6 +7,7 @@ import DiagnosisFilter from "../../components/admin/diagnosis/DiagnosisFilter";
 import DiagnosisTableList from "../../components/admin/diagnosis/DiagnosisTableList";
 import DiagnosisPagination from "../../components/admin/diagnosis/DiagnosisPaginations";
 import DiagnosisAddModal from "../../components/admin/diagnosis/DiagnosisAddModal";
+import DiagnosisEditModal from "../../components/admin/diagnosis/DiagnosisEditModal";
 
 export default function DiagnosisList() {
     const {
@@ -21,6 +22,7 @@ export default function DiagnosisList() {
 
     const [openAdd, setOpenAdd] = useState(false);
     const [selected, setSelected] = useState(null);
+    const [openEdit, setOpenEdit] = useState(false);
 
     const handleApplyFilters = useCallback((next) => {
         updateFilters(next);
@@ -128,7 +130,7 @@ export default function DiagnosisList() {
             <DiagnosisTableList
                 rows={rows}
                 loading={loading}
-                onEdit={(row) => { setSelected(row); /* open edit modal here */ }}
+                onEdit={(row) => { setSelected(row); setOpenEdit(true); }}
                 onDelete={handleDelete}
             />
 
@@ -146,6 +148,15 @@ export default function DiagnosisList() {
                 onClose={() => setOpenAdd(false)}
                 onCreated={() => {
                     // Modal already refreshes list; keep hook here for extensibility
+                }}
+            />
+
+            <DiagnosisEditModal
+                open={openEdit}
+                data={selected}
+                onClose={() => { setOpenEdit(false); setSelected(null); }}
+                onUpdated={() => {
+                    // No reload needed; slice updates on fulfilled
                 }}
             />
         </Container>
