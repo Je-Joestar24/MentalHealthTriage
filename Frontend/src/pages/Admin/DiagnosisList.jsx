@@ -6,6 +6,7 @@ import useDiagnosis from "../../hooks/diagnosisHook";
 import DiagnosisFilter from "../../components/admin/diagnosis/DiagnosisFilter";
 import DiagnosisTableList from "../../components/admin/diagnosis/DiagnosisTableList";
 import DiagnosisPagination from "../../components/admin/diagnosis/DiagnosisPaginations";
+import DiagnosisAddModal from "../../components/admin/diagnosis/DiagnosisAddModal";
 
 export default function DiagnosisList() {
     const {
@@ -138,6 +139,14 @@ export default function DiagnosisList() {
                 pages={pagination.pages}
                 total={pagination.total}
                 onChange={handlePageChange}
+            />
+
+            <DiagnosisAddModal
+                open={openAdd}
+                onClose={() => setOpenAdd(false)}
+                onCreated={() => {
+                    // Modal already refreshes list; keep hook here for extensibility
+                }}
             />
         </Container>
     );

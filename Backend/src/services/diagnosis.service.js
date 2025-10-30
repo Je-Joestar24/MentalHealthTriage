@@ -101,6 +101,16 @@ export async function updateDiagnosis(id, updateData) {
   delete updateData.type;
   delete updateData.createdBy;
 
+  // Normalize potential CSV-style keys to new fields
+  if (typeof updateData.dsm5_code === 'string' && !updateData.dsm5Code) {
+    updateData.dsm5Code = updateData.dsm5_code;
+    delete updateData.dsm5_code;
+  }
+  if (typeof updateData.icd10_code === 'string' && !updateData.icd10Code) {
+    updateData.icd10Code = updateData.icd10_code;
+    delete updateData.icd10_code;
+  }
+
   const diagnosis = await Diagnosis.findByIdAndUpdate(
     id,
     { $set: updateData },
@@ -129,13 +139,46 @@ export async function deleteDiagnosis(id) {
 }
 
 export async function bulkImportDiagnoses(diagnosesData, userId) {
-  const diagnoses = diagnosesData.map(data => ({
-    ...data,
-    createdBy: userId,
-    symptoms: Array.isArray(data.symptoms) 
-      ? data.symptoms 
-      : data.symptoms?.split(/[,;]/).map(s => s.trim().toLowerCase()) || []
-  }));
+  const diagnoses = diagnosesData.map(raw => {
+    const data = { ...raw };
+    // Map CSV-like keys to fields
+    const mapped = {
+      name: data.name || data.diagnosis || data.title,
+      section: data.section,
+      chapter: data.chapter,
+      fullCriteriaSummary: data.fullCriteriaSummary || data.full_criteria_summary,
+      keySymptomsSummary: data.keySymptomsSummary || data.key_symptoms_summary || data.key_symptoms_sammary,
+      validatedScreenerParaphrased: data.validatedScreenerParaphrased || data.validated_screener_paraphrased,
+      exactScreenerItem: data.exactScreenerItem || data.exact_screener_item,
+      durationContext: data.durationContext || data.duration_context,
+      severity: data.severity,
+      specifiers: data.specifiers,
+      criteriaPage: data.criteriaPage ?? (typeof data.criteria_page === 'string' ? parseInt(data.criteria_page, 10) : data.criteria_page),
+      // legacy single-system fields if present
+      system: data.system,
+      code: data.code,
+      // dual code support
+      dsm5Code: data.dsm5Code || data.dsm5_code,
+      icd10Code: data.icd10Code || data.icd10_code,
+      course: data.course,
+      typicalDuration: data.typicalDuration, // if CSV provides, otherwise leave undefined
+    };
+
+    // Symptoms normalization (string list -> array)
+    const symptoms = Array.isArray(data.symptoms)
+      ? data.symptoms
+      : data.symptom // CSV may have single symptom column repeated per row; still accept
+        ? [String(data.symptom)]
+        : (data.symptoms?.split(/[,;]/) || [])
+            .map(s => s.trim().toLowerCase())
+            .filter(Boolean);
+
+    return {
+      ...mapped,
+      createdBy: userId,
+      symptoms,
+    };
+  });
 
   return await Diagnosis.insertMany(diagnoses, { ordered: false });
 }
