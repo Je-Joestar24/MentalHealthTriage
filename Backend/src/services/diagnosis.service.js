@@ -12,20 +12,34 @@ export async function getAllDiagnoses(queryParams = {}) {
     system
   } = queryParams;
 
-  // Build filter object
-  const filter = {};
+  // Build filter object using composable $and clauses to support combining search + system
+  const andClauses = [];
   
   if (search) {
-    filter.name = { $regex: search, $options: 'i' };
+    const regex = { $regex: search, $options: 'i' };
+    andClauses.push({
+      $or: [
+        { name: regex },
+        { code: regex },
+        { dsm5Code: regex },
+        { icd10Code: regex }
+      ]
+    });
   }
   
   if (type) {
-    filter.type = type;
+    andClauses.push({ type });
   }
 
   if (system) {
-    filter.system = system;
+    const systemOr =
+      system === 'DSM-5'
+        ? { $or: [ { system: 'DSM-5' }, { dsm5Code: { $exists: true, $ne: '' } } ] }
+        : { $or: [ { system: 'ICD-10' }, { icd10Code: { $exists: true, $ne: '' } } ] };
+    andClauses.push(systemOr);
   }
+
+  const filter = andClauses.length ? { $and: andClauses } : {};
 
   // Build sort object
   const sort = {};
