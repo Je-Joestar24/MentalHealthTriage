@@ -42,13 +42,13 @@ const DiagnosisSchema = new Schema(
     exactScreenerItem: { type: String, trim: true },
 
     // Duration and severity
-    typicalDuration: DurationRuleSchema, // maps to “Typical Duration Rules” in UI
+    typicalDuration: DurationRuleSchema, // maps to "Typical Duration Rules" in UI
     durationContext: { type: String, trim: true }, // e.g., "≥2 years (≥1 year youth)"
-    severity: { type: String, trim: true }, // e.g., "Mild / Moderate / Severe"
+    severity: { type: Schema.Types.Mixed }, // String or array (CSV imports use arrays from semicolon-separated values)
 
     // Course and specifiers
     course: { type: String, enum: ['Continuous', 'Episodic', 'Either'], default: 'Either' },
-    specifiers: { type: String, trim: true },
+    specifiers: { type: Schema.Types.Mixed }, // String or array (CSV imports use arrays from semicolon-separated values)
 
     // Misc
     notes: { type: String, trim: true },

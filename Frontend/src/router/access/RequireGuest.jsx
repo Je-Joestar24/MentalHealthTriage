@@ -7,7 +7,7 @@ export default function RequireGuest({ children }) {
     if (loading) return null;
 
     if (userLogged || user) {
-        return <Navigate to="/superadmin/dashboard" replace />;
+        return <Navigate to="/super/dashboard" replace />;
     }
 
     return children;

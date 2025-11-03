@@ -174,45 +174,74 @@ export async function deleteDiagnosis(id) {
   return diagnosis;
 }
 
+// Helper to parse semicolon-separated strings into arrays
+function parseSemicolonArray(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') {
+    return value.split(';').map(s => s.trim()).filter(Boolean);
+  }
+  return [];
+}
+
 export async function bulkImportDiagnoses(diagnosesData, userId) {
   const diagnoses = diagnosesData.map(raw => {
     const data = { ...raw };
     // Map CSV-like keys to fields
     const mapped = {
-      name: data.name || data.diagnosis || data.title,
-      section: data.section,
-      chapter: data.chapter,
-      fullCriteriaSummary: data.fullCriteriaSummary || data.full_criteria_summary,
-      keySymptomsSummary: data.keySymptomsSummary || data.key_symptoms_summary || data.key_symptoms_sammary,
-      validatedScreenerParaphrased: data.validatedScreenerParaphrased || data.validated_screener_paraphrased,
-      exactScreenerItem: data.exactScreenerItem || data.exact_screener_item,
-      durationContext: data.durationContext || data.duration_context,
-      severity: data.severity,
-      specifiers: data.specifiers,
-      criteriaPage: data.criteriaPage ?? (typeof data.criteria_page === 'string' ? parseInt(data.criteria_page, 10) : data.criteria_page),
-      // legacy single-system fields if present
-      system: data.system,
-      code: data.code,
+      name: data.name || data.diagnosis || data.Diagnosis || data.title,
+      section: data.section || data.Section,
+      chapter: data.chapter || data.Chapter,
+      fullCriteriaSummary: data.fullCriteriaSummary || data.full_criteria_summary || data.Full_criteria_summary,
+      keySymptomsSummary: data.keySymptomsSummary || data.key_symptoms_summary || data.key_symptoms_sammary || data.Key_symptoms_summary,
+      validatedScreenerParaphrased: data.validatedScreenerParaphrased || data.validated_screener_paraphrased || data.Validated_screener_paraphrased,
+      exactScreenerItem: data.exactScreenerItem || data.exact_screener_item || data.Exact_screener_item,
+      durationContext: data.durationContext || data.duration_context || data.Duration_context,
+      severity: parseSemicolonArray(data.severity || data.Severity), // Parse semicolon-separated to array
+      specifiers: parseSemicolonArray(data.specifiers || data.Specifiers || data.specifier), // Parse semicolon-separated to array
+      criteriaPage: data.criteriaPage ?? data.criteria_page ?? data.Criteria_page
+        ? (typeof (data.criteriaPage ?? data.criteria_page ?? data.Criteria_page) === 'string' 
+            ? parseInt(data.criteriaPage ?? data.criteria_page ?? data.Criteria_page, 10) 
+            : (data.criteriaPage ?? data.criteria_page ?? data.Criteria_page))
+        : undefined,
+      // legacy single-system fields - derive from dual codes if present
+      system: data.system || (data.dsm5_code || data.dsm5Code || data.DSM5_code) ? 'DSM-5' : 'ICD-10',
+      code: data.code || data.dsm5_code || data.dsm5Code || data.dsm5Code || data.DSM5_code || data.icd10_code || data.icd10Code || data.ICD10_code,
       // dual code support
-      dsm5Code: data.dsm5Code || data.dsm5_code,
-      icd10Code: data.icd10Code || data.icd10_code,
-      course: data.course,
-      typicalDuration: data.typicalDuration, // if CSV provides, otherwise leave undefined
+      dsm5Code: data.dsm5Code || data.dsm5_code || data.DSM5_code || undefined,
+      icd10Code: data.icd10Code || data.icd10_code || data.ICD10_code || undefined,
+      course: data.course || data.Course || 'Either',
+      typicalDuration: data.typicalDuration || data.typical_duration, // if CSV provides, otherwise leave undefined
     };
 
-    // Symptoms normalization (string list -> array)
-    const symptoms = Array.isArray(data.symptoms)
-      ? data.symptoms
-      : data.symptom // CSV may have single symptom column repeated per row; still accept
-        ? [String(data.symptom)]
-        : (data.symptoms?.split(/[,;]/) || [])
-            .map(s => s.trim().toLowerCase())
-            .filter(Boolean);
+    // Symptoms normalization - handle both single symptom column and array
+    let symptoms = [];
+    if (Array.isArray(data.symptom)) {
+      // Already an array (from frontend combination logic) - keep as is, just trim and filter
+      symptoms = data.symptom.map(s => String(s).trim()).filter(Boolean);
+    } else if (Array.isArray(data.symptoms)) {
+      // Fallback to symptoms array if present
+      symptoms = data.symptoms.map(s => String(s).trim()).filter(Boolean);
+    } else if (data.symptom || data.Symptom) {
+      // Single symptom column - convert to array
+      const symptomValue = String(data.symptom || data.Symptom || '').trim();
+      if (symptomValue) {
+        // Keep in pretty format (frontend already normalized)
+        symptoms = [symptomValue];
+      }
+    } else if (data.symptoms && typeof data.symptoms === 'string') {
+      // Already a string - split by comma/semicolon
+      symptoms = String(data.symptoms).split(/[,;]/)
+        .map(s => s.trim())
+        .filter(Boolean);
+    }
 
     return {
       ...mapped,
       createdBy: userId,
       symptoms,
+      type: 'global', // Bulk imports default to global
+      organization: null,
     };
   });
 

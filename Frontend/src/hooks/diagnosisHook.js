@@ -25,7 +25,7 @@ const useDiagnosis = () => {
   }, []);
 
   const loadDiagnoses = useCallback((params = {}) => {
-    const merged = { page: 1, limit: 10, ...diagnosisState.filters, ...params };
+    const merged = { page: 1, limit: 5, ...diagnosisState.filters, ...params };
     const qp = sanitizeFilters(merged);
     dispatch(fetchDiagnoses(qp));
   }, [dispatch, diagnosisState.filters, sanitizeFilters]);
@@ -74,6 +74,9 @@ const useDiagnosis = () => {
       const result = await dispatch(deleteDiagnosisThunk(id));
       if (deleteDiagnosisThunk.fulfilled.match(result)) {
         dispatch(displayNotification({ message: 'Diagnosis deleted successfully', type: 'success' }));
+        // Reload diagnoses after successful deletion to sync pagination
+        const currentParams = { page: diagnosisState.pagination.page, limit: diagnosisState.pagination.limit, ...diagnosisState.filters };
+        await dispatch(fetchDiagnoses(sanitizeFilters(currentParams)));
       } else {
         const errorMessage = typeof result.payload === 'string' ? result.payload : 
                            (result.payload?.message || 'Failed to delete diagnosis');
@@ -83,7 +86,7 @@ const useDiagnosis = () => {
     } finally {
       dispatch(setLoading(false));
     }
-  }, [dispatch]);
+  }, [dispatch, diagnosisState.pagination, diagnosisState.filters, sanitizeFilters]);
 
   const confirmDeleteDiagnosis = useCallback((diagnosis, onConfirm) => {
     dispatch(showGlobalDialog({
@@ -92,8 +95,9 @@ const useDiagnosis = () => {
       message: `Are you sure you want to delete "${diagnosis?.name || 'this diagnosis'}"? This action cannot be undone.`,
       confirmText: 'Delete',
       cancelText: 'Cancel',
-      onConfirm: () => {
-        deleteDiagnosis(diagnosis._id);
+      onConfirm: async () => {
+        // DeleteDiagnosis now handles reload internally after successful deletion
+        await deleteDiagnosis(diagnosis._id);
         if (onConfirm) onConfirm();
       },
       onCancel: () => {}
@@ -136,7 +140,7 @@ const useDiagnosis = () => {
 
   useEffect(() => {
     if (!rows.length) {
-      dispatch(fetchDiagnoses(sanitizeFilters({ page: 1, limit: 10, ...diagnosisState.filters })));
+      dispatch(fetchDiagnoses(sanitizeFilters({ page: 1, limit: 5, ...diagnosisState.filters })));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

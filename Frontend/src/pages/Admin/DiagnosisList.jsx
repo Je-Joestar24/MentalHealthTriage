@@ -8,6 +8,7 @@ import DiagnosisTableList from "../../components/admin/diagnosis/DiagnosisTableL
 import DiagnosisPagination from "../../components/admin/diagnosis/DiagnosisPaginations";
 import DiagnosisAddModal from "../../components/admin/diagnosis/DiagnosisAddModal";
 import DiagnosisEditModal from "../../components/admin/diagnosis/DiagnosisEditModal";
+import DiagnosisImportModal from "../../components/admin/diagnosis/DiagnosisImportModal";
 
 export default function DiagnosisList() {
     const {
@@ -23,6 +24,7 @@ export default function DiagnosisList() {
     const [openAdd, setOpenAdd] = useState(false);
     const [selected, setSelected] = useState(null);
     const [openEdit, setOpenEdit] = useState(false);
+    const [openImport, setOpenImport] = useState(false);
 
     const handleApplyFilters = useCallback((next) => {
         updateFilters(next);
@@ -41,6 +43,7 @@ export default function DiagnosisList() {
 
     const handleDelete = useCallback((row) => {
         confirmDeleteDiagnosis(row, () => {
+            // This callback only runs if deletion failed - reload to refresh data
             loadDiagnoses(filters);
         });
     }, [confirmDeleteDiagnosis, loadDiagnoses, filters]);
@@ -95,32 +98,52 @@ export default function DiagnosisList() {
                     </Typography>
                 </Box>
 
-                <Button
-                    onClick={() => setOpenAdd(true)}
-                    variant="contained"
-                    startIcon={<AddCircleOutlineIcon sx={{ fontSize: 18 }} />}
-                    component={motion.button}
-                    whileHover={{
-                        scale: 1.02,
-                        boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
-                    }}
-                    whileTap={{ scale: 0.98 }}
-                    sx={{
-                        textTransform: 'none',
-                        fontWeight: 600,
-                        fontSize: '0.85rem',
-                        borderRadius: 1.5,
-                        px: 2,
-                        py: 0.8,
-                        minHeight: 36,
-                        transition: 'all 0.2s ease',
-                        '&:hover': {
-                            transform: 'translateY(-1px)',
-                        },
-                    }}
-                >
-                    New diagnosis
-                </Button>
+                <Stack direction="row" spacing={1.5}>
+                    <Button
+                        onClick={() => setOpenImport(true)}
+                        variant="outlined"
+                        component={motion.button}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        sx={{
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            fontSize: '0.85rem',
+                            borderRadius: 1.5,
+                            px: 2,
+                            py: 0.8,
+                            minHeight: 36,
+                        }}
+                    >
+                        Import CSV
+                    </Button>
+                    <Button
+                        onClick={() => setOpenAdd(true)}
+                        variant="contained"
+                        startIcon={<AddCircleOutlineIcon sx={{ fontSize: 18 }} />}
+                        component={motion.button}
+                        whileHover={{
+                            scale: 1.02,
+                            boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
+                        }}
+                        whileTap={{ scale: 0.98 }}
+                        sx={{
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            fontSize: '0.85rem',
+                            borderRadius: 1.5,
+                            px: 2,
+                            py: 0.8,
+                            minHeight: 36,
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                                transform: 'translateY(-1px)',
+                            },
+                        }}
+                    >
+                        New diagnosis
+                    </Button>
+                </Stack>
             </Stack>
 
             <Card elevation={0} sx={{ p: 1.5, mb: 1.5 }}>
@@ -157,6 +180,14 @@ export default function DiagnosisList() {
                 onClose={() => { setOpenEdit(false); setSelected(null); }}
                 onUpdated={() => {
                     // No reload needed; slice updates on fulfilled
+                }}
+            />
+
+            <DiagnosisImportModal
+                open={openImport}
+                onClose={() => setOpenImport(false)}
+                onImported={() => {
+                    // List already refreshed in modal
                 }}
             />
         </Container>
