@@ -119,7 +119,7 @@ const initialState = {
     currentDiagnosis: null,
     pagination: {
         page: 1,
-        limit: 10,
+        limit: 5,
         total: 0,
         pages: 0
     },
@@ -234,12 +234,18 @@ const diagnosisSlice = createSlice({
             })
             .addCase(deleteDiagnosis.fulfilled, (state, action) => {
                 state.loading = false;
-                state.diagnoses = state.diagnoses.filter(d => d._id !== action.payload.id);
-                if (state.currentDiagnosis && state.currentDiagnosis._id === action.payload.id) {
+                // Remove from frontend state immediately for instant UI feedback
+                const deletedId = action.payload.id;
+                state.diagnoses = state.diagnoses.filter(d => d._id !== deletedId);
+                
+                // Clear current diagnosis if it was deleted
+                if (state.currentDiagnosis && state.currentDiagnosis._id === deletedId) {
                     state.currentDiagnosis = null;
                 }
+                
                 state.success = action.payload.message;
                 state.error = null;
+                // Note: Pagination will be updated when fetchDiagnoses is called after deletion
             })
             .addCase(deleteDiagnosis.rejected, (state, action) => {
                 state.loading = false;

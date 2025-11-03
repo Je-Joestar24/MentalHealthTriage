@@ -51,6 +51,14 @@ export default function DiagnosisEditModal({ open, onClose, data, onUpdated }) {
   );
   const [showDualCodes, setShowDualCodes] = useState(hasDualCodes);
 
+  // Helper to normalize severity/specifiers (array -> string for display, or keep string)
+  const normalizeFieldForDisplay = (value) => {
+    if (Array.isArray(value)) {
+      return value.join('; ');
+    }
+    return value || '';
+  };
+
   useEffect(() => {
     if (open && data) {
       setForm({
@@ -68,8 +76,8 @@ export default function DiagnosisEditModal({ open, onClose, data, onUpdated }) {
         },
         fullCriteriaSummary: data.fullCriteriaSummary || '',
         keySymptomsSummary: data.keySymptomsSummary || '',
-        severity: data.severity || '',
-        specifiers: data.specifiers || ''
+        severity: normalizeFieldForDisplay(data.severity),
+        specifiers: normalizeFieldForDisplay(data.specifiers)
       });
       setShowDualCodes(Boolean(data?.dsm5Code || data?.icd10Code));
       setSymptomInput('');
@@ -122,6 +130,17 @@ export default function DiagnosisEditModal({ open, onClose, data, onUpdated }) {
     if (!data?._id) return;
     setSubmitting(true);
     try {
+      // Helper to parse semicolon-separated string into array, or keep as string if preferred
+      const parseFieldForBackend = (value) => {
+        if (!value || !value.trim()) return undefined;
+        // If user entered semicolon-separated values, parse to array for consistency
+        // Otherwise keep as string for backward compatibility
+        if (value.includes(';')) {
+          return value.split(';').map(s => s.trim()).filter(Boolean);
+        }
+        return value.trim();
+      };
+
       const payload = {
         // name/system/code/type are immutable in backend update service
         symptoms: (form.symptoms || []).filter(Boolean),
@@ -133,8 +152,8 @@ export default function DiagnosisEditModal({ open, onClose, data, onUpdated }) {
         },
         fullCriteriaSummary: form.fullCriteriaSummary?.trim() || undefined,
         keySymptomsSummary: form.keySymptomsSummary?.trim() || undefined,
-        severity: form.severity?.trim() || undefined,
-        specifiers: form.specifiers?.trim() || undefined,
+        severity: parseFieldForBackend(form.severity),
+        specifiers: parseFieldForBackend(form.specifiers),
       };
 
       if (showDualCodes) {

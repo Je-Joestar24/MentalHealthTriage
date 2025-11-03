@@ -3,7 +3,7 @@ import api from '../../api/axios';
 // Get all diagnoses with pagination and filtering
 export const getAllDiagnoses = async (params = {}) => {
     try {
-        const qp = { page: 1, limit: 10, ...params };
+        const qp = { page: 1, limit: 5, ...params };
         const { data } = await api.get('/api/diagnoses', { params: qp });
         const p = data.pagination || {};
         const pagination = {
