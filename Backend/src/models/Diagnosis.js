@@ -18,8 +18,13 @@ const DiagnosisSchema = new Schema(
   {
     // Core identifiers
     name: { type: String, required: true, trim: true }, // e.g., "Persistent Depressive Disorder (Dysthymia)"
+    // Legacy single-system fields (kept for backward compatibility and simple creates)
     system: { type: String, enum: DIAGNOSIS_SYSTEMS, default: 'DSM-5', index: true },
     code: { type: String, trim: true }, // e.g., "300.4" or "F34.1"
+
+    // Optional dual-code support (CSV imports / updates)
+    dsm5Code: { type: String, trim: true, index: true },
+    icd10Code: { type: String, trim: true, index: true },
 
     // Hierarchical context
     section: { type: String, trim: true }, // e.g., "Section II: Diagnostic Criteria and Codes"
@@ -37,13 +42,13 @@ const DiagnosisSchema = new Schema(
     exactScreenerItem: { type: String, trim: true },
 
     // Duration and severity
-    typicalDuration: DurationRuleSchema, // maps to “Typical Duration Rules” in UI
+    typicalDuration: DurationRuleSchema, // maps to "Typical Duration Rules" in UI
     durationContext: { type: String, trim: true }, // e.g., "≥2 years (≥1 year youth)"
-    severity: { type: String, trim: true }, // e.g., "Mild / Moderate / Severe"
+    severity: { type: Schema.Types.Mixed }, // String or array (CSV imports use arrays from semicolon-separated values)
 
     // Course and specifiers
     course: { type: String, enum: ['Continuous', 'Episodic', 'Either'], default: 'Either' },
-    specifiers: { type: String, trim: true },
+    specifiers: { type: Schema.Types.Mixed }, // String or array (CSV imports use arrays from semicolon-separated values)
 
     // Misc
     notes: { type: String, trim: true },
@@ -59,6 +64,7 @@ const DiagnosisSchema = new Schema(
 
 // Indexes for faster lookup
 DiagnosisSchema.index({ name: 1, system: 1, code: 1, organization: 1 });
+DiagnosisSchema.index({ name: 1, dsm5Code: 1, icd10Code: 1, organization: 1 });
 
 // Clean JSON output
 DiagnosisSchema.set('toJSON', {

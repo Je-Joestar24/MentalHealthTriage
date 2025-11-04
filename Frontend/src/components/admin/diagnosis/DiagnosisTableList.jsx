@@ -49,7 +49,7 @@ const DiagnosisTableList = ({ rows = [], loading, onEdit, onDelete }) => {
                 <TableRow>
                   <TableCell sx={{ py: 1 }}>Name</TableCell>
                   <TableCell sx={{ py: 1 }}>System</TableCell>
-                  <TableCell sx={{ py: 1 }}>Code</TableCell>
+                  <TableCell sx={{ py: 1 }}>Code(s)</TableCell>
                   <TableCell sx={{ py: 1 }}>Symptoms</TableCell>
                   <TableCell sx={{ py: 1 }}>Type</TableCell>
                   <TableCell sx={{ py: 1 }}>Created</TableCell>
@@ -58,9 +58,19 @@ const DiagnosisTableList = ({ rows = [], loading, onEdit, onDelete }) => {
               </TableHead>
               <TableBody>
                 {rows.map((row, idx) => {
-                  const initials = row.name?.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase() || 'DX';
+                  const initials = row.name?.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase() || 'DX';
                   const created = row.createdAt ? new Date(row.createdAt).toLocaleDateString() : '—';
-                  const symptoms = Array.isArray(row.symptoms) ? row.symptoms.slice(0,3).join(', ').replaceAll('_',' ') : '—';
+                  const symptoms = Array.isArray(row.symptoms) ? row.symptoms.slice(0, 3).join(', ').replaceAll('_', ' ') : '—';
+                  const hasDual = Boolean(row.dsm5Code || row.icd10Code);
+                  const codeDisplay = hasDual ? (
+                    <>
+                      {row.dsm5Code && <Typography variant="body2">DSM-5: {row.dsm5Code}</Typography>}
+                      {row.icd10Code && <Typography variant="body2">ICD-10: {row.icd10Code}</Typography>}
+                    </>
+                  ) : (
+                    <Typography variant="body2">{row.code || '—'}</Typography>
+                  );
+
                   return (
                     <Zoom in style={{ transitionDelay: `${idx * 25}ms` }} key={row._id || idx}>
                       <TableRow hover sx={{ transition: 'all 200ms ease', '&:hover': { backgroundColor: (theme) => alpha(theme.palette.primary.light, 0.06) } }}>
@@ -76,10 +86,25 @@ const DiagnosisTableList = ({ rows = [], loading, onEdit, onDelete }) => {
                           </Stack>
                         </TableCell>
                         <TableCell>
-                          <Chip size="small" color={systemColorMap[row.system] || 'default'} label={row.system || '—'} />
+                          {hasDual ? (
+                            <Stack direction="column" spacing={0.5}>
+                              {row.dsm5Code && (
+                                <Chip size="small" color={systemColorMap['DSM-5']} label="DSM-5" />
+                              )}
+                              {row.icd10Code && (
+                                <Chip size="small" color={systemColorMap['ICD-10']} label="ICD-10" />
+                              )}
+                            </Stack>
+                          ) : (
+                            <Chip
+                              size="small"
+                              color={systemColorMap[row.system] || 'default'}
+                              label={row.system || '—'}
+                            />
+                          )}
                         </TableCell>
                         <TableCell>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{row.code || '—'}</Typography>
+                          {codeDisplay}
                         </TableCell>
                         <TableCell>
                           <Typography variant="caption" color="text.secondary">{symptoms}</Typography>
