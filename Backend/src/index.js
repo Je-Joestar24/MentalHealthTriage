@@ -9,6 +9,7 @@ import itemsRouter from './routes/items.routes.js';
 import authRouter from './routes/auth.js';
 import organizationsRouter from './routes/organizations.routes.js';
 import diagnosesRouter from './routes/diagnosis.routes.js';
+import individualRouter from './routes/individual.routes.js';
 import { errorHandler } from './middleware/error.handler.js';
 
 const app = express();
@@ -44,6 +45,7 @@ app.use('/api/items', itemsRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/admin/organizations', organizationsRouter);
 app.use('/api/diagnoses', diagnosesRouter);
+app.use('/api/admin/individuals', individualRouter);
 
 // health check
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
