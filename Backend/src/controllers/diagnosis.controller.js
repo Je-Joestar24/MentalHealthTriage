@@ -54,3 +54,8 @@ export const bulkImportDiagnoses = asyncWrapper(async (req, res) => {
     message: `Successfully imported ${diagnoses.length} diagnoses`
   });
 });
+
+export const getAllSymptoms = asyncWrapper(async (req, res) => {
+  const list = await diagnosisService.getAllSymptoms();
+  res.json({ success: true, data: list });
+});

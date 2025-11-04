@@ -3,7 +3,7 @@ import api from '../../api/axios';
 // Get all diagnoses with pagination and filtering
 export const getAllDiagnoses = async (params = {}) => {
     try {
-        const qp = { page: 1, limit: 10, ...params };
+        const qp = { page: 1, limit: 5, ...params };
         const { data } = await api.get('/api/diagnoses', { params: qp });
         const p = data.pagination || {};
         const pagination = {
@@ -73,6 +73,17 @@ export const bulkImportDiagnoses = async (bulkPayload) => {
         return { success: true, data: data.data, message: data.message };
     } catch (error) {
         const message = error?.response?.data?.error || error.message || 'Failed to bulk import diagnoses';
+        return { success: false, error: message };
+    }
+};
+
+// Get all symptoms (pretty, for suggestions)
+export const getAllSymptoms = async () => {
+    try {
+        const { data } = await api.get('/api/diagnoses/symptoms/fetch');
+        return { success: true, data: data.data };
+    } catch (error) {
+        const message = error?.response?.data?.error || error.message || 'Failed to load symptoms';
         return { success: false, error: message };
     }
 };
