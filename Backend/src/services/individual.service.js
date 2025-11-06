@@ -154,8 +154,143 @@ export const updatePsychologistStatus = async (psychologistId, isActive) => {
 };
 
 /**
+ * Create a new individual psychologist account
+ * @param {Object} accountData - Account data including name, email, password, months
+ * @param {number} accountData.months - Number of months for subscription (0 for unlimited)
+ */
+export const createIndividualPsychologist = async (accountData) => {
+  const { name, email, password, months } = accountData;
+
+  // Validate required fields
+  if (!name || !email || !password) {
+    throw new Error('Name, email, and password are required');
+  }
+
+  // Validate months
+  if (months === undefined || months === null || months < 0) {
+    throw new Error('Months must be a non-negative number');
+  }
+
+  // Check if email already exists
+  const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
+  if (existingUser) {
+    throw new Error('Email already exists');
+  }
+
+  // Calculate subscription end date based on months
+  let subscriptionEndDate = null;
+  if (months > 0) {
+    const startDate = new Date();
+    subscriptionEndDate = new Date(startDate);
+    subscriptionEndDate.setMonth(subscriptionEndDate.getMonth() + months);
+  }
+
+  // Create new psychologist account
+  const psychologist = new User({
+    name: name.trim(),
+    email: email.toLowerCase().trim(),
+    password,
+    role: 'psychologist',
+    organization: null, // Individual account, no organization
+    isActive: true,
+    subscriptionStartDate: new Date(),
+    subscriptionEndDate
+  });
+
+  await psychologist.save();
+
+  // Fetch the created psychologist with virtual fields
+  const createdPsychologist = await User.findById(psychologist._id)
+    .select('name email subscriptionStartDate subscriptionEndDate isActive organization createdAt updatedAt')
+    .lean();
+
+  // Calculate effective status
+  const isExpired = createdPsychologist.subscriptionEndDate && new Date() > new Date(createdPsychologist.subscriptionEndDate);
+  const effectiveStatus = isExpired ? 'expired' : 'active';
+  
+  let daysRemaining = null;
+  if (createdPsychologist.subscriptionEndDate) {
+    const now = new Date();
+    const endDate = new Date(createdPsychologist.subscriptionEndDate);
+    const diffTime = endDate - now;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    daysRemaining = Math.max(0, diffDays);
+  }
+
+  return {
+    ...createdPsychologist,
+    effectiveStatus,
+    isSubscriptionExpired: isExpired,
+    daysRemaining
+  };
+};
+
+/**
+ * Extend subscription months for an individual psychologist
+ * @param {string} psychologistId - Psychologist ID
+ * @param {number} months - Number of months to extend
+ */
+export const extendSubscriptionMonths = async (psychologistId, months) => {
+  if (!months || months <= 0) {
+    throw new Error('Months must be a positive number');
+  }
+
+  const psychologist = await User.findOne({
+    _id: psychologistId,
+    role: 'psychologist',
+    organization: null
+  });
+
+  if (!psychologist) {
+    throw new Error('Individual psychologist not found');
+  }
+
+  // Calculate new subscription end date
+  let newSubscriptionEndDate;
+  const now = new Date();
+
+  if (psychologist.subscriptionEndDate && new Date(psychologist.subscriptionEndDate) > now) {
+    // If subscription is still active, extend from current end date
+    newSubscriptionEndDate = new Date(psychologist.subscriptionEndDate);
+    newSubscriptionEndDate.setMonth(newSubscriptionEndDate.getMonth() + months);
+  } else {
+    // If subscription is expired or doesn't exist, extend from now
+    newSubscriptionEndDate = new Date(now);
+    newSubscriptionEndDate.setMonth(newSubscriptionEndDate.getMonth() + months);
+  }
+
+  // Update subscription end date
+  psychologist.subscriptionEndDate = newSubscriptionEndDate;
+  await psychologist.save();
+
+  // Fetch updated psychologist with virtual fields
+  const updatedPsychologist = await User.findById(psychologistId)
+    .select('name email subscriptionStartDate subscriptionEndDate isActive organization createdAt updatedAt')
+    .lean();
+
+  // Calculate effective status
+  const isExpired = updatedPsychologist.subscriptionEndDate && new Date() > new Date(updatedPsychologist.subscriptionEndDate);
+  const effectiveStatus = isExpired ? 'expired' : 'active';
+  
+  let daysRemaining = null;
+  if (updatedPsychologist.subscriptionEndDate) {
+    const endDate = new Date(updatedPsychologist.subscriptionEndDate);
+    const diffTime = endDate - now;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    daysRemaining = Math.max(0, diffDays);
+  }
+
+  return {
+    ...updatedPsychologist,
+    effectiveStatus,
+    isSubscriptionExpired: isExpired,
+    daysRemaining
+  };
+};
+
+/**
  * Update psychologist account details
- * Can update: subscriptionEndDate, email, name, password, organization
+ * Can update: email, name, password only
  */
 export const updatePsychologist = async (psychologistId, updateData) => {
   const psychologist = await User.findOne({
@@ -170,11 +305,6 @@ export const updatePsychologist = async (psychologistId, updateData) => {
 
   // Prepare update object
   const updateFields = {};
-
-  // Update subscription end date
-  if (updateData.subscriptionEndDate !== undefined) {
-    updateFields.subscriptionEndDate = updateData.subscriptionEndDate ? new Date(updateData.subscriptionEndDate) : null;
-  }
 
   // Update email
   if (updateData.email !== undefined) {
@@ -201,17 +331,6 @@ export const updatePsychologist = async (psychologistId, updateData) => {
     }
     const salt = await bcrypt.genSalt(10);
     updateFields.password = await bcrypt.hash(updateData.password, salt);
-  }
-
-  // Update organization (add to organization)
-  if (updateData.organization !== undefined) {
-    if (updateData.organization === null || updateData.organization === '') {
-      // Remove from organization
-      updateFields.organization = null;
-    } else {
-      // Add to organization
-      updateFields.organization = updateData.organization;
-    }
   }
 
   // Apply updates
