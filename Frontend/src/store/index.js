@@ -3,6 +3,7 @@ import userReducer from "./userSlice";
 import uiReducer from "./uiSlice";
 import organizationReducer from "./organizationSlice";
 import diagnosisReducer from "./diagnosisSlice";
+import individualReducer from "./individualSlice";
 
 export const store = configureStore({
     reducer: {
@@ -10,5 +11,6 @@ export const store = configureStore({
         ui: uiReducer,
         organization: organizationReducer,
         diagnosis: diagnosisReducer,
+        individual: individualReducer,
     },
 });
