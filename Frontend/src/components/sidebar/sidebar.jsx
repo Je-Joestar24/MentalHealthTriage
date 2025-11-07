@@ -60,7 +60,7 @@ const Sidebar = ({ mobileOpen, onMobileClose }) => {
     { to: "/super/organizations", icon: GroupOutlinedIcon, label: "Organizations" },
     { to: "/super/diagnosis", icon: InsightsOutlinedIcon, label: "Diagnosis List" },
     { to: "/super/accounts", icon: PersonOutlinedIcon, label: "Individual Accounts" },
-    { to: "/super/reports", icon: AssessmentOutlinedIcon, label: "Reports" },
+    /* { to: "/super/reports", icon: AssessmentOutlinedIcon, label: "Reports" }, */
   ];
 
   const sidebarContent = (
