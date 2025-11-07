@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Box, Container, Stack, Typography, Button, Card, Divider } from '@mui/material';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import useIndividual from '../../hooks/individualHook';
@@ -6,6 +6,9 @@ import IndividualFilter from '../../components/admin/individual/IndividualFilter
 import { motion } from 'framer-motion';
 import IndividualTableList from '../../components/admin/individual/IndividualTableList';
 import IndividualPagination from '../../components/admin/individual/IndividualPagination';
+import IndividualAddModal from '../../components/admin/individual/IndividualAddModal';
+import IndividualEditModal from '../../components/admin/individual/IndividualEditModal';
+import ExtendModal from '../../components/admin/individual/ExtendModal';
 import { useDispatch } from 'react-redux';
 import { showGlobalDialog } from '../../store/uiSlice';
 
@@ -21,6 +24,11 @@ const IndividualAccounts = () => {
     extendSubscriptionMonths,
     updateIndividualStatus,
   } = useIndividual();
+
+  const [openAdd, setOpenAdd] = useState(false);
+  const [openEdit, setOpenEdit] = useState(false);
+  const [openExtend, setOpenExtend] = useState(false);
+  const [selected, setSelected] = useState(null);
 
   const handleApplyFilters = useCallback((next) => {
     updateFilters(next);
@@ -38,8 +46,8 @@ const IndividualAccounts = () => {
   }, [filters, loadIndividuals]);
 
   const handleExtend = useCallback((row) => {
-    // TODO: Open extend modal in next iteration
-    console.log('Extend subscription for:', row);
+    setSelected(row);
+    setOpenExtend(true);
   }, []);
 
   const handleToggleStatus = useCallback((row) => {
@@ -58,8 +66,8 @@ const IndividualAccounts = () => {
   }, [dispatch, updateIndividualStatus, loadIndividuals, filters]);
 
   const handleEdit = useCallback((row) => {
-    // TODO: Open edit modal in next iteration
-    console.log('Edit account:', row);
+    setSelected(row);
+    setOpenEdit(true);
   }, []);
 
   return (
@@ -113,10 +121,7 @@ const IndividualAccounts = () => {
         </Box>
 
         <Button
-          onClick={() => {
-            // TODO: Open add modal in next iteration
-            console.log('Add new individual');
-          }}
+          onClick={() => setOpenAdd(true)}
           variant="contained"
           startIcon={<AddCircleOutlineIcon sx={{ fontSize: 18 }} />}
           component={motion.button}
@@ -166,6 +171,38 @@ const IndividualAccounts = () => {
         pages={pagination.pages}
         total={pagination.total}
         onChange={handlePageChange}
+      />
+
+      <IndividualAddModal
+        open={openAdd}
+        onClose={() => setOpenAdd(false)}
+        onCreated={() => {
+          loadIndividuals(filters);
+        }}
+      />
+
+      <IndividualEditModal
+        open={openEdit}
+        data={selected}
+        onClose={() => {
+          setOpenEdit(false);
+          setSelected(null);
+        }}
+        onUpdated={() => {
+          loadIndividuals(filters);
+        }}
+      />
+
+      <ExtendModal
+        open={openExtend}
+        data={selected}
+        onClose={() => {
+          setOpenExtend(false);
+          setSelected(null);
+        }}
+        onExtended={() => {
+          loadIndividuals(filters);
+        }}
       />
     </Container>
   );
