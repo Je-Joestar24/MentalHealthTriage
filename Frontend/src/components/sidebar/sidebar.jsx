@@ -71,10 +71,10 @@ const Sidebar = ({ mobileOpen, onMobileClose }) => {
 
   
   const psychoNavItems = [
-    { to: "/psychologists/dashboard", icon: SpaceDashboardOutlinedIcon, label: "Dashboard" },
-    { to: "/psychologists/triage", icon: MonitorHeartOutlinedIcon, label: "Triage Patient" },
-    { to: "/psychologists/patients", icon: GroupsOutlinedIcon, label: "Patients" },
-    { to: "/psychologists/diagnosis/list", icon: MedicalInformationOutlinedIcon, label: "Diagnosis List" },
+    { to: "/psychologist/dashboard", icon: SpaceDashboardOutlinedIcon, label: "Dashboard" },
+    { to: "/psychologist/triage", icon: MonitorHeartOutlinedIcon, label: "Triage Patient" },
+    { to: "/psychologist/patients", icon: GroupsOutlinedIcon, label: "Patients" },
+    { to: "/psychologist/diagnosis/list", icon: MedicalInformationOutlinedIcon, label: "Diagnosis List" },
   ];
 
   const navigationItems = [
