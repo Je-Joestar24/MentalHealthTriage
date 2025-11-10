@@ -78,7 +78,7 @@ const NavHeader = ({ onLogout, onOpenProfile, user }) => {
               fontSize: { xs: '1.1rem', md: '1.5rem' }
             }}
           >
-            HealthTriage Admin
+            HealthTriage
           </Typography>
         </Box>
 

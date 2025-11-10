@@ -1,10 +1,10 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { 
-  Box, 
-  Stack, 
-  Typography, 
-  ButtonBase, 
+import {
+  Box,
+  Stack,
+  Typography,
+  ButtonBase,
   Divider,
   useTheme,
   useMediaQuery,
@@ -12,11 +12,16 @@ import {
   List,
   ListItem
 } from '@mui/material';
-import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
-import InsightsOutlinedIcon from '@mui/icons-material/InsightsOutlined';
+import SpaceDashboardOutlinedIcon from '@mui/icons-material/SpaceDashboardOutlined';
+import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
+import MedicalInformationOutlinedIcon from '@mui/icons-material/MedicalInformationOutlined';
+import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import PsychologyAltOutlinedIcon from '@mui/icons-material/PsychologyAltOutlined';
+import MonitorHeartOutlinedIcon from '@mui/icons-material/MonitorHeartOutlined';
+import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
 import GroupOutlinedIcon from '@mui/icons-material/GroupOutlined';
-import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined';
-import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
+import useUser from '../../hooks/userHook';
 
 const NavItem = ({ to, icon: Icon, label, onClick }) => (
   <ButtonBase
@@ -54,13 +59,29 @@ const NavItem = ({ to, icon: Icon, label, onClick }) => (
 const Sidebar = ({ mobileOpen, onMobileClose }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { user } = useUser()
+
+  const organizationNavItems = [
+    { to: "/compay/dashboard", icon: SpaceDashboardOutlinedIcon, label: "Dashboard" },
+    { to: "/compay/details", icon: InfoOutlinedIcon, label: "Company Details" },
+    { to: "/compay/diagnosis/list", icon: MedicalInformationOutlinedIcon, label: "Diagnosis List" },
+    { to: "/compay/psychologist/list", icon: PsychologyAltOutlinedIcon, label: "Psychologists List" },
+    { to: "/compay/patients", icon: GroupsOutlinedIcon, label: "Patients" },
+  ];
+
+  
+  const psychoNavItems = [
+    { to: "/psychologists/dashboard", icon: SpaceDashboardOutlinedIcon, label: "Dashboard" },
+    { to: "/psychologists/triage", icon: MonitorHeartOutlinedIcon, label: "Triage Patient" },
+    { to: "/psychologists/patients", icon: GroupsOutlinedIcon, label: "Patients" },
+    { to: "/psychologists/diagnosis/list", icon: MedicalInformationOutlinedIcon, label: "Diagnosis List" },
+  ];
 
   const navigationItems = [
-    { to: "/super/dashboard", icon: DashboardOutlinedIcon, label: "Dashboard" },
-    { to: "/super/organizations", icon: GroupOutlinedIcon, label: "Organizations" },
-    { to: "/super/diagnosis", icon: InsightsOutlinedIcon, label: "Diagnosis List" },
-    { to: "/super/accounts", icon: PersonOutlinedIcon, label: "Individual Accounts" },
-    /* { to: "/super/reports", icon: AssessmentOutlinedIcon, label: "Reports" }, */
+    { to: "/super/dashboard", icon: SpaceDashboardOutlinedIcon, label: "Dashboard" },
+    { to: "/super/organizations", icon: BusinessOutlinedIcon, label: "Organizations" },
+    { to: "/super/diagnosis", icon: MedicalInformationOutlinedIcon, label: "Diagnosis List" },
+    { to: "/super/accounts", icon: PeopleAltOutlinedIcon, label: "Individual Accounts" },
   ];
 
   const sidebarContent = (
@@ -74,9 +95,9 @@ const Sidebar = ({ mobileOpen, onMobileClose }) => {
     }}>
       {/* Navigation Items */}
       <Box sx={{ p: 3, flex: 1 }}>
-        <Typography 
-          variant="overline" 
-          sx={{ 
+        <Typography
+          variant="overline"
+          sx={{
             color: 'text.secondary',
             fontWeight: 600,
             letterSpacing: 1,
@@ -86,9 +107,9 @@ const Sidebar = ({ mobileOpen, onMobileClose }) => {
         >
           Navigation
         </Typography>
-        
+
         <Stack spacing={0.5}>
-          {navigationItems.map((item) => (
+          {user?.role == 'super_admin' && (navigationItems.map((item) => (
             <NavItem
               key={item.to}
               to={item.to}
@@ -96,14 +117,32 @@ const Sidebar = ({ mobileOpen, onMobileClose }) => {
               label={item.label}
               onClick={isMobile ? onMobileClose : undefined}
             />
-          ))}
+          )))}
+          {user?.role == 'company_admin' && (organizationNavItems.map((item) => (
+            <NavItem
+              key={item.to}
+              to={item.to}
+              icon={item.icon}
+              label={item.label}
+              onClick={isMobile ? onMobileClose : undefined}
+            />
+          )))}
+          {user?.role == 'psychologist' && (psychoNavItems.map((item) => (
+            <NavItem
+              key={item.to}
+              to={item.to}
+              icon={item.icon}
+              label={item.label}
+              onClick={isMobile ? onMobileClose : undefined}
+            />
+          )))}
         </Stack>
       </Box>
 
       {/* Footer */}
       <Box sx={{ p: 3, borderTop: (theme) => `1px solid ${theme.palette.divider}` }}>
         <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-          HealthTriage Admin Panel
+          HealthTriage {`${user?.role?.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}`} Panel
         </Typography>
         <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
           Version 1.0.0
