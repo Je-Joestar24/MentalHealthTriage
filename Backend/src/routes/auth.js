@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { login, seedSuperAdmin, logout } from '../controllers/authController.js';
+import { login, seedSuperAdmin, logout, updateProfile } from '../controllers/authController.js';
 import jwt from 'jsonwebtoken';
 
 const router = Router();
@@ -25,6 +25,7 @@ router.get('/seed-super-admin', seedSuperAdmin);
 
 // Protected routes
 router.post('/logout', requireAuth, logout);
+router.put('/profile', requireAuth, updateProfile);
 
 export default router;
 
