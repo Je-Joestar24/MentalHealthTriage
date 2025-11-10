@@ -8,11 +8,14 @@ import MainLayout from "../layouts/MainLayout";
 import AdminDashboard from "../pages/Admin/AdminDashboard";
 import RequireGuest from "./access/RequireGuest";
 import RequireAuth from "./access/RequireAuth";
-import PsychologistDashboard from "../pages/PsychologistDashboard";
+import PsychologistDashboard from "../pages/Psychologist/PsychologistDashboard";
 import OrgAdminDashboard from "../pages/OrgAdminDashboard";
 import Organizations from "../pages/Admin/Organizations";
 import DiagnosisList from "../pages/Admin/DiagnosisList";
 import IndividualAccounts from "../pages/Admin/IndividualAccounts";
+import TriagePatient from "../pages/Psychologist/TriagePatient";
+import PatientsList from "../pages/Psychologist/PatientsList";
+import PsychologistDiagnosisList from "../pages/Psychologist/PsychologistDiagnosisList";
 
 const router = createBrowserRouter([
     {
@@ -113,6 +116,27 @@ const router = createBrowserRouter([
                         path: "dashboard", element: (
                             <RequireAuth roles={["psychologist"]}>
                                 <PsychologistDashboard />
+                            </RequireAuth>
+                        )
+                    },
+                    {
+                        path: "triage", element: (
+                            <RequireAuth roles={["psychologist"]}>
+                                <TriagePatient />
+                            </RequireAuth>
+                        )
+                    },
+                    {
+                        path: "patients", element: (
+                            <RequireAuth roles={["psychologist"]}>
+                                <PatientsList />
+                            </RequireAuth>
+                        )
+                    },
+                    {
+                        path: "diagnosis/list", element: (
+                            <RequireAuth roles={["psychologist"]}>
+                                <PsychologistDiagnosisList />
                             </RequireAuth>
                         )
                     },
