@@ -22,7 +22,7 @@ import {
   KeyboardArrowDown
 } from '@mui/icons-material';
 
-const NavHeader = ({ onLogout, user }) => {
+const NavHeader = ({ onLogout, onOpenProfile, user }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -44,7 +44,7 @@ const NavHeader = ({ onLogout, user }) => {
 
   const handleProfile = () => {
     handleClose();
-    // Navigate to profile page or open profile modal
+    onOpenProfile?.();
   };
 
   return (

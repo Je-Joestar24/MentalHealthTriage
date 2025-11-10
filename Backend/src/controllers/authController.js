@@ -65,4 +65,95 @@ export async function logout(req, res, next) {
     }
 }
 
+export async function updateProfile(req, res, next) {
+    try {
+        const userId = req.user?.sub || req.user?._id;
+        
+        if (!userId) {
+            return res.status(401).json({ success: false, error: 'Authentication required' });
+        }
+
+        const { name, email, current_password: currentPassword, new_password: newPassword } = req.body || {};
+
+        if (!name && !email && !newPassword) {
+            return res.status(400).json({
+                success: false,
+                error: 'At least one of name, email, or new password must be provided'
+            });
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, error: 'User not found' });
+        }
+
+        // Update name if provided
+        if (name !== undefined) {
+            const trimmedName = name.trim();
+            if (!trimmedName) {
+                return res.status(400).json({ success: false, error: 'Name cannot be empty' });
+            }
+            user.name = trimmedName;
+        }
+
+        // Update email if provided
+        if (email !== undefined) {
+            const normalizedEmail = email.toLowerCase().trim();
+            if (!normalizedEmail) {
+                return res.status(400).json({ success: false, error: 'Email cannot be empty' });
+            }
+
+            if (normalizedEmail !== user.email) {
+                const existingUser = await User.findOne({
+                    email: normalizedEmail,
+                    _id: { $ne: userId }
+                });
+
+                if (existingUser) {
+                    return res.status(409).json({ success: false, error: 'Email is already in use' });
+                }
+
+                user.email = normalizedEmail;
+            }
+        }
+
+        // Handle password change
+        if (newPassword !== undefined && newPassword !== '') {
+            if (!currentPassword) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Current password is required to set a new password'
+                });
+            }
+
+            const isCurrentValid = await user.comparePassword(currentPassword);
+            if (!isCurrentValid) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Current password is incorrect'
+                });
+            }
+
+            if (String(newPassword).length < 8) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'New password must be at least 8 characters long'
+                });
+            }
+
+            user.password = newPassword;
+        }
+
+        await user.save();
+
+        return res.json({
+            success: true,
+            data: user.toJSON(),
+            message: 'Profile updated successfully'
+        });
+    } catch (err) {
+        next(err);
+    }
+}
+
 

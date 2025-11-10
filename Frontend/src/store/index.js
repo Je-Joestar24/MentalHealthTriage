@@ -4,6 +4,7 @@ import uiReducer from "./uiSlice";
 import organizationReducer from "./organizationSlice";
 import diagnosisReducer from "./diagnosisSlice";
 import individualReducer from "./individualSlice";
+import profileReducer from "./profileSlice";
 
 export const store = configureStore({
     reducer: {
@@ -12,5 +13,6 @@ export const store = configureStore({
         organization: organizationReducer,
         diagnosis: diagnosisReducer,
         individual: individualReducer,
+        profile: profileReducer,
     },
 });

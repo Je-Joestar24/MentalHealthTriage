@@ -8,10 +8,12 @@ import NavHeader from '../components/sidebar/NavHeader';
 import Loading from '../components/notify/Loading';
 import Response from '../components/notify/Response';
 import GlobalDialog from '../components/dialogbox/GlobalDialog';
+import ProfileSidebar from '../components/sidebar/ProfileSidebar';
 
 const MainLayout = () => {
   const { logout, loading, user } = useUser();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -30,7 +32,11 @@ const MainLayout = () => {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', bgcolor: 'grey.50', overflow: 'hidden' }}>
       {/* NavHeader - spans full width */}
-      <NavHeader onLogout={handleLogout} user={user} />
+      <NavHeader
+        onLogout={handleLogout}
+        onOpenProfile={() => setProfileOpen(true)}
+        user={user}
+      />
       
       <Box sx={{ display: 'flex', flex: 1 }}>
         {/* Mobile Menu Button */}
@@ -83,6 +89,11 @@ const MainLayout = () => {
       <Loading />
       <Response />
       <GlobalDialog />
+      <ProfileSidebar
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        onLogout={handleLogout}
+      />
     </Box>
   );
 };
