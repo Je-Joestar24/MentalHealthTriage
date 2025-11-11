@@ -22,6 +22,7 @@ import {
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
+import useUser from '../../../hooks/userHook';
 
 const systemColorMap = {
   'DSM-5': 'primary',
@@ -34,6 +35,7 @@ const typeColorMap = {
 };
 
 const DiagnosisTableList = ({ rows = [], loading, onEdit, onDelete }) => {
+  const { user } = useUser()
   return (
     <Card elevation={0} sx={{ p: 1.5, overflow: 'hidden' }}>
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
@@ -117,7 +119,7 @@ const DiagnosisTableList = ({ rows = [], loading, onEdit, onDelete }) => {
                         </TableCell>
                         <TableCell align="right">
                           <Stack direction="row" spacing={1} justifyContent="flex-end">
-                            <Tooltip title="Edit" arrow>
+                            {(user?.role == 'super_admin' || (user?.role == 'psychologist' && row.type == 'personal' && user?.id == row?.createdBy?._id)) && (<><Tooltip title="Edit" arrow>
                               <IconButton onClick={() => onEdit?.(row)}>
                                 <EditOutlinedIcon />
                               </IconButton>
@@ -126,7 +128,8 @@ const DiagnosisTableList = ({ rows = [], loading, onEdit, onDelete }) => {
                               <IconButton color="error" onClick={() => onDelete?.(row)}>
                                 <DeleteOutlineIcon />
                               </IconButton>
-                            </Tooltip>
+                            </Tooltip></>)}
+                            
                             <Tooltip title="Insights" arrow>
                               <IconButton disabled color="primary">
                                 <ScienceOutlinedIcon />
