@@ -78,6 +78,7 @@ export default function DiagnosisFilter({ defaultValues = {}, onChange, onReset 
             <MenuItem value="all">All</MenuItem>
             <MenuItem value="global">Global</MenuItem>
             <MenuItem value="organization">Organization</MenuItem>
+            <MenuItem value="personal">Personal</MenuItem>
           </TextField>
 
           <TextField

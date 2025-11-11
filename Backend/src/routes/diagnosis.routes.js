@@ -4,9 +4,8 @@ import * as diagnosisController from '../controllers/diagnosis.controller.js';
 
 const router = express.Router();
 
-// Protect all routes
+// Protect all routes with authentication
 router.use(authenticateToken);
-router.use(requireSuperAdmin);
 
 // GET /api/diagnoses - Get all diagnoses with pagination and filtering
 router.get('/', diagnosisController.getAllDiagnoses);
@@ -23,8 +22,8 @@ router.put('/:id', diagnosisController.updateDiagnosis);
 // DELETE /api/diagnoses/:id - Delete diagnosis
 router.delete('/:id', diagnosisController.deleteDiagnosis);
 
-// POST /api/diagnoses/bulk-import - Bulk import diagnoses
-router.post('/bulk-import', diagnosisController.bulkImportDiagnoses);
+// POST /api/diagnoses/bulk-import - Bulk import diagnoses (super admin only)
+router.post('/bulk-import', requireSuperAdmin, diagnosisController.bulkImportDiagnoses);
 
 // GET /api/symptoms - List all symptoms (prettified, for form suggestions)
 router.get('/symptoms/fetch', diagnosisController.getAllSymptoms);
