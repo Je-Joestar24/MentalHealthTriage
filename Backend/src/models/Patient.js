@@ -19,6 +19,8 @@ const PatientSchema = new Schema(
     assignedPsychologist: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     organization: { type: Schema.Types.ObjectId, ref: 'Organization', default: null, index: true },
     triageRecords: [{ type: Schema.Types.ObjectId, ref: 'Triage' }],
+    status: { type: String, enum: ['active', 'inactive'], default: 'active', index: true },
+    isDeleted: { type: Boolean, default: false, index: true }
   },
   { timestamps: true }
 );
