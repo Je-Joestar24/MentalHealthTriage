@@ -87,6 +87,8 @@ const initialState = {
     psychologist: '',
     organization: '',
     includeDeleted: 'false',
+    sortBy: 'createdAt',
+    sortOrder: 'desc',
     page: 1,
     limit: 10
   }
