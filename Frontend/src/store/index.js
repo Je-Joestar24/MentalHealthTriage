@@ -5,6 +5,7 @@ import organizationReducer from "./organizationSlice";
 import diagnosisReducer from "./diagnosisSlice";
 import individualReducer from "./individualSlice";
 import profileReducer from "./profileSlice";
+import patientsReducer from "./patientSlice";
 
 export const store = configureStore({
     reducer: {
@@ -14,5 +15,6 @@ export const store = configureStore({
         diagnosis: diagnosisReducer,
         individual: individualReducer,
         profile: profileReducer,
+        patients: patientsReducer,
     },
 });
