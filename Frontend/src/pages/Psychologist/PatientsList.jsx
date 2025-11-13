@@ -1,15 +1,19 @@
-
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Box, Container, Stack, Typography, Button, Card, Divider } from '@mui/material';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import RefreshOutlinedIcon from '@mui/icons-material/RefreshOutlined';
 import { motion } from 'framer-motion';
+import { useDispatch } from 'react-redux';
 import PatientsFilter from '../../components/psychologist/patients/PatientsFilter';
 import PatientsTableList from '../../components/psychologist/patients/PatientsTableList';
 import PatientsPagination from '../../components/psychologist/patients/PatientsPagination';
+import AddPatientModal from '../../components/psychologist/patients/AddPatientModal';
+import EditPatientModal from '../../components/psychologist/patients/EditPatientModal';
 import usePatients from '../../hooks/patientHook';
+import { showGlobalDialog } from '../../store/uiSlice';
 
 export default function PatientsList() {
+  const dispatch = useDispatch();
   const {
     list,
     pagination,
@@ -26,6 +30,10 @@ export default function PatientsList() {
     clearAllMessages,
     resetCurrentPatient
   } = usePatients();
+
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState(null);
 
   useEffect(() => {
     loadPatients();
@@ -53,10 +61,17 @@ export default function PatientsList() {
     [filters, loadPatients, updateFilter]
   );
 
-  const handleCreatePatient = useCallback(async () => {
-    // placeholder for create modal integration
-    console.log('TODO: open create patient modal');
+  const handleCreatePatient = useCallback(() => {
+    setAddModalOpen(true);
   }, []);
+
+  const handleCloseAddModal = useCallback(() => {
+    setAddModalOpen(false);
+  }, []);
+
+  const handleCreated = useCallback(() => {
+    loadPatients(filters);
+  }, [filters, loadPatients]);
 
   const handleViewPatient = useCallback((patient) => {
     console.log('TODO: view patient', patient);
@@ -67,23 +82,64 @@ export default function PatientsList() {
   }, []);
 
   const handleEditPatient = useCallback((patient) => {
-    console.log('TODO: edit patient', patient);
+    setSelectedPatient(patient);
+    setEditModalOpen(true);
   }, []);
 
+  const handleCloseEditModal = useCallback(() => {
+    setEditModalOpen(false);
+    setSelectedPatient(null);
+  }, []);
+
+  const handleUpdated = useCallback(() => {
+    loadPatients(filters);
+  }, [filters, loadPatients]);
+
+  // Handlers that only open the GlobalDialog - the actual action happens in onConfirm callback
   const handleDeletePatient = useCallback(
-    async (patient) => {
-      await softDeletePatient(patient._id);
-      loadPatients(filters);
+    (patient) => {
+      // Only opens the dialog - does NOT perform the delete action
+      dispatch(
+        showGlobalDialog({
+          type: 'danger',
+          title: 'Archive Patient',
+          message: `Are you sure you want to archive "${patient.name}"? This action can be undone later.`,
+          confirmText: 'Archive',
+          cancelText: 'Cancel',
+          // The actual delete action only happens when user clicks "Archive" in the dialog
+          onConfirm: async () => {
+            const result = await softDeletePatient(patient._id);
+            if (result?.meta?.requestStatus === 'fulfilled') {
+              loadPatients(filters);
+            }
+          }
+        })
+      );
     },
-    [filters, loadPatients, softDeletePatient]
+    [dispatch, filters, loadPatients, softDeletePatient]
   );
 
   const handleRestorePatient = useCallback(
-    async (patient) => {
-      await restorePatient(patient._id);
-      loadPatients(filters);
+    (patient) => {
+      // Only opens the dialog - does NOT perform the restore action
+      dispatch(
+        showGlobalDialog({
+          type: 'info',
+          title: 'Restore Patient',
+          message: `Are you sure you want to restore "${patient.name}"? The patient will be active again.`,
+          confirmText: 'Restore',
+          cancelText: 'Cancel',
+          // The actual restore action only happens when user clicks "Restore" in the dialog
+          onConfirm: async () => {
+            const result = await restorePatient(patient._id);
+            if (result?.meta?.requestStatus === 'fulfilled') {
+              loadPatients(filters);
+            }
+          }
+        })
+      );
     },
-    [filters, loadPatients, restorePatient]
+    [dispatch, filters, loadPatients, restorePatient]
   );
 
   const appliedFiltersSummary = useMemo(() => {
@@ -225,6 +281,19 @@ export default function PatientsList() {
         pages={pagination.totalPages}
         total={pagination.totalItems}
         onChange={handlePageChange}
+      />
+
+      <AddPatientModal
+        open={addModalOpen}
+        onClose={handleCloseAddModal}
+        onCreated={handleCreated}
+      />
+
+      <EditPatientModal
+        open={editModalOpen}
+        onClose={handleCloseEditModal}
+        data={selectedPatient}
+        onUpdated={handleUpdated}
       />
     </Container>
   );
