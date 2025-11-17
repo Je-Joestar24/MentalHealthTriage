@@ -127,6 +127,13 @@ const router = createBrowserRouter([
                         )
                     },
                     {
+                        path: "triage/:id", element: (
+                            <RequireAuth roles={["psychologist"]}>
+                                <TriagePatient />
+                            </RequireAuth>
+                        )
+                    },
+                    {
                         path: "patients", element: (
                             <RequireAuth roles={["psychologist"]}>
                                 <PatientsList />

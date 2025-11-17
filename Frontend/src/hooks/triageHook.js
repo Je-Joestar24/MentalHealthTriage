@@ -1,0 +1,121 @@
+import { useCallback } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  matchDiagnoses as matchDiagnosesThunk,
+  createTriage as createTriageThunk,
+  clearMatchedDiagnoses,
+  clearCurrentTriage,
+  clearMessages,
+  setLoading
+} from '../store/triageSlice';
+import { displayNotification, setLoading as setGlobalLoading } from '../store/uiSlice';
+
+const useTriage = () => {
+  const dispatch = useDispatch();
+  const triageState = useSelector((state) => state.triage);
+
+  /**
+   * Match diagnoses based on symptoms
+   * @param {Array<string>} symptoms - Array of symptom strings
+   * @param {string} system - Optional: 'DSM-5' or 'ICD-10'
+   */
+  const matchDiagnoses = useCallback(
+    async (symptoms, system = null) => {
+      if (!symptoms || !Array.isArray(symptoms) || symptoms.length === 0) {
+        dispatch(displayNotification({ 
+          message: 'Please provide at least one symptom', 
+          type: 'warning' 
+        }));
+        return { success: false, error: 'No symptoms provided' };
+      }
+
+      const result = await dispatch(matchDiagnosesThunk({ symptoms, system }));
+      return result;
+    },
+    [dispatch]
+  );
+
+  /**
+   * Create a new triage record
+   * @param {string} patientId - Patient ID
+   * @param {Object} triageData - Triage data
+   */
+  const createTriage = useCallback(
+    async (patientId, triageData) => {
+      if (!patientId) {
+        dispatch(displayNotification({ 
+          message: 'Patient ID is required', 
+          type: 'error' 
+        }));
+        return { success: false, error: 'Patient ID is required' };
+      }
+
+      if (!triageData.severityLevel) {
+        dispatch(displayNotification({ 
+          message: 'Severity level is required', 
+          type: 'error' 
+        }));
+        return { success: false, error: 'Severity level is required' };
+      }
+
+      if (!Array.isArray(triageData.symptoms)) {
+        dispatch(displayNotification({ 
+          message: 'Symptoms must be an array', 
+          type: 'error' 
+        }));
+        return { success: false, error: 'Symptoms must be an array' };
+      }
+
+      dispatch(setGlobalLoading(true));
+      try {
+        const result = await dispatch(createTriageThunk({ patientId, triageData }));
+        return result;
+      } finally {
+        dispatch(setGlobalLoading(false));
+      }
+    },
+    [dispatch]
+  );
+
+  /**
+   * Clear matched diagnoses
+   */
+  const clearMatched = useCallback(() => {
+    dispatch(clearMatchedDiagnoses());
+  }, [dispatch]);
+
+  /**
+   * Clear current triage
+   */
+  const clearTriage = useCallback(() => {
+    dispatch(clearCurrentTriage());
+  }, [dispatch]);
+
+  /**
+   * Clear all messages
+   */
+  const clearAllMessages = useCallback(() => {
+    dispatch(clearMessages());
+  }, [dispatch]);
+
+  return {
+    // State
+    matchedDiagnoses: triageState.matchedDiagnoses,
+    matchCount: triageState.matchCount,
+    matchQuery: triageState.matchQuery,
+    currentTriage: triageState.currentTriage,
+    loading: triageState.loading,
+    error: triageState.error,
+    success: triageState.success,
+    
+    // Actions
+    matchDiagnoses,
+    createTriage,
+    clearMatched,
+    clearTriage,
+    clearAllMessages
+  };
+};
+
+export default useTriage;
+
