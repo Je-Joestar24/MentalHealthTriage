@@ -31,10 +31,18 @@ export async function matchDiagnoses(symptoms = [], systemFilter = null, user = 
   }
 
   // Build filter for diagnoses - symptoms must match
+  // Handle both underscore and space variations (e.g., "mood_lability" and "mood lability")
   const symptomFilter = {
-    $or: normalizedSymptoms.map(symptom => ({
-      symptoms: { $regex: new RegExp(symptom, 'i') }
-    }))
+    $or: normalizedSymptoms.flatMap(symptom => {
+      // Create variations: original, with spaces, with underscores
+      const withSpaces = symptom.replace(/_/g, ' ');
+      const withUnderscores = symptom.replace(/\s+/g, '_');
+      const variations = [symptom, withSpaces, withUnderscores].filter((v, i, arr) => arr.indexOf(v) === i);
+      
+      return variations.map(variation => ({
+        symptoms: { $regex: new RegExp(variation.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') }
+      }));
+    })
   };
 
   // Build system filter if provided
@@ -77,10 +85,23 @@ export async function matchDiagnoses(symptoms = [], systemFilter = null, user = 
   const matchedDiagnoses = diagnoses.map(diagnosis => {
     const diagnosisSymptoms = (diagnosis.symptoms || []).map(normalizeSymptom);
     
-    // Find matching symptoms
-    const matchedSymptoms = normalizedSymptoms.filter(symptom =>
-      diagnosisSymptoms.some(ds => ds.includes(symptom) || symptom.includes(ds))
-    );
+    // Find matching symptoms - handle both underscore and space variations
+    const matchedSymptoms = normalizedSymptoms.filter(symptom => {
+      const withSpaces = symptom.replace(/_/g, ' ');
+      const withUnderscores = symptom.replace(/\s+/g, '_');
+      const variations = [symptom, withSpaces, withUnderscores];
+      
+      return diagnosisSymptoms.some(ds => {
+        const dsWithSpaces = ds.replace(/_/g, ' ');
+        const dsWithUnderscores = ds.replace(/\s+/g, '_');
+        const dsVariations = [ds, dsWithSpaces, dsWithUnderscores];
+        
+        // Check if any variation matches
+        return variations.some(v => dsVariations.some(dsv => 
+          dsv.includes(v) || v.includes(dsv) || dsv === v
+        ));
+      });
+    });
 
     const matchCount = matchedSymptoms.length;
     const matchPercentage = diagnosisSymptoms.length > 0
