@@ -42,7 +42,7 @@ export const matchDiagnoses = async (symptoms = [], system = null) => {
  */
 export const createTriage = async (patientId, triageData) => {
   try {
-    const { data } = await api.post(`/api/psychologist/patients/${patientId}/triage`, triageData);
+    const { data } = await api.post(`${BASE_URL}/patients/${patientId}/triage`, triageData);
     return {
       success: data.success ?? true,
       data: data.data,

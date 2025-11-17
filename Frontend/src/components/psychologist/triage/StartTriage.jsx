@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Container, Box, Stack, Typography, Card, Divider, Button, Avatar, Collapse } from '@mui/material';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Container, Box, Stack, Typography, Card, Divider, Button, Avatar, Collapse, Grid } from '@mui/material';
 import { motion } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
@@ -10,18 +10,26 @@ import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import usePatients from '../../../hooks/patientHook';
+import useTriage from '../../../hooks/triageHook';
+import TriageLeftPanel from './TriageLeftPanel';
+import TriageRightPanel from './TriageRightPanel';
 
 export default function StartTriage() {
     const navigate = useNavigate();
     const { id } = useParams();
     const { currentPatient, loadPatientById, loading } = usePatients();
+    const { createTriage, clearMatched, clearAllMessages } = useTriage();
     const [showDetails, setShowDetails] = useState(false);
 
     useEffect(() => {
         if (id) {
             loadPatientById(id);
         }
-    }, [id, loadPatientById]);
+        return () => {
+            clearMatched();
+            clearAllMessages();
+        };
+    }, [id, loadPatientById, clearMatched, clearAllMessages]);
 
     const handleBack = () => {
         navigate('/psychologist/triage');
@@ -30,6 +38,18 @@ export default function StartTriage() {
     const toggleDetails = () => {
         setShowDetails((prev) => !prev);
     };
+
+    const handleSaveTriage = useCallback(
+        async (triageData) => {
+            if (!id) return;
+            const result = await createTriage(id, triageData);
+            if (result?.meta?.requestStatus === 'fulfilled') {
+                // Optionally navigate or show success message
+                // navigate('/psychologist/triage');
+            }
+        },
+        [id, createTriage]
+    );
 
     if (loading) {
         return (
@@ -291,7 +311,7 @@ export default function StartTriage() {
                     </Stack>
                 </Card>
 
-                {/* Triage Form Placeholder - Will be implemented later */}
+                {/* Triage Form - Two Panel Layout */}
                 <Card
                     elevation={0}
                     component={motion.div}
@@ -299,20 +319,30 @@ export default function StartTriage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: 0.2 }}
                     sx={{
-                        p: 3,
+                        p: 2.5,
                         borderRadius: 2,
                         border: '1px solid',
                         borderColor: 'divider',
                         bgcolor: 'background.paper',
-                        minHeight: 400
+                        minHeight: 600
                     }}
                 >
-                    <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-                        Triage Assessment
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                        Triage form will be implemented here...
-                    </Typography>
+                    <Grid container spacing={2.5} sx={{ height: '100%' }}>
+                        {/* Left Panel - Form */}
+                        <Grid item xs={12} md={5}>
+                            <TriageLeftPanel patientId={id} onSave={handleSaveTriage} />
+                        </Grid>
+
+                        {/* Divider */}
+                        <Grid item xs={12} md={0.5} sx={{ display: { xs: 'none', md: 'block' } }}>
+                            <Divider orientation="vertical" sx={{ height: '100%', mx: 'auto' }} />
+                        </Grid>
+
+                        {/* Right Panel - Diagnosis List */}
+                        <Grid item xs={12} md={6.5}>
+                            <TriageRightPanel />
+                        </Grid>
+                    </Grid>
                 </Card>
             </Stack>
         </Container>
