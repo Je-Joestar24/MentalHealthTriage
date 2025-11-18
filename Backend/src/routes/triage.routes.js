@@ -1,6 +1,6 @@
 import express from 'express';
 import {
-//   getTriageRecords,
+  getTriageRecords,
 //   getTriageById,
   createTriage,
 //   updateTriage,
@@ -30,7 +30,8 @@ router.get('/match-diagnoses', matchDiagnoses);
 router.post('/match-diagnoses', matchDiagnoses);
 
 // GET /api/psychologist/patients/:patientId/triage - Get all triage records for a patient
-// router.get('/patients/:patientId/triage', getTriageRecords);
+// Query params: ?page=1&limit=10&search=term&sortBy=createdAt&sortOrder=desc
+router.get('/patients/:patientId/triage', getTriageRecords);
 
 // GET /api/psychologist/patients/:patientId/triage/:triageId - Get a single triage record
 // router.get('/patients/:patientId/triage/:triageId', getTriageById);
