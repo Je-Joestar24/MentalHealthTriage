@@ -3,20 +3,23 @@ import asyncWrapper from '../middleware/async.wrapper.js';
 
 /**
  * GET /api/psychologist/patients/:patientId/triage
- * Get all triage records for a patient
+ * Get all triage records for a patient with pagination, search, and sorting
+ * Query params: page, limit, search, sortBy, sortOrder
  */
-// export const getTriageRecords = asyncWrapper(async (req, res) => {
-//   const { patientId } = req.params;
-//   const psychologistId = req.user._id || req.user.id;
+export const getTriageRecords = asyncWrapper(async (req, res) => {
+  const { patientId } = req.params;
+  const psychologistId = req.user._id || req.user.id;
+  const queryParams = req.query;
 
-//   const triages = await triageService.getTriageRecords(patientId, psychologistId);
+  const result = await triageService.getTriageRecords(patientId, psychologistId, queryParams);
 
-//   res.json({
-//     success: true,
-//     data: triages,
-//     count: triages.length
-//   });
-// });
+  res.json({
+    success: true,
+    data: result.triages,
+    pagination: result.pagination,
+    count: result.triages.length
+  });
+});
 
 /**
  * GET /api/psychologist/patients/:patientId/triage/:triageId

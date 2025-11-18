@@ -123,9 +123,17 @@ export async function matchDiagnoses(symptoms = [], systemFilter = null, user = 
 }
 
 /**
- * Get all triage records for a patient
+ * Get all triage records for a patient with pagination, search, and sorting
  */
-export async function getTriageRecords(patientId, psychologistId) {
+export async function getTriageRecords(patientId, psychologistId, queryParams = {}) {
+  const {
+    page = 1,
+    limit = 10,
+    search = '',
+    sortBy = 'createdAt',
+    sortOrder = 'desc'
+  } = queryParams;
+
   // Verify patient belongs to psychologist
   const patient = await Patient.findOne({
     _id: patientId,
@@ -136,13 +144,61 @@ export async function getTriageRecords(patientId, psychologistId) {
     throw new Error('Patient not found or access denied');
   }
 
-  const triages = await Triage.find({ patient: patientId, psychologist: psychologistId })
-    .populate('patient', 'name age gender')
-    .populate('psychologist', 'name email')
-    .sort({ createdAt: -1 })
-    .lean();
+  // Build base filter
+  const filter = {
+    patient: patientId,
+    psychologist: psychologistId
+  };
 
-  return triages;
+  // Add search filter if provided
+  if (search) {
+    const searchRegex = { $regex: search, $options: 'i' };
+    filter.$or = [
+      { preliminaryDiagnosis: searchRegex },
+      { notes: searchRegex },
+      { severityLevel: searchRegex },
+      { symptoms: searchRegex } // MongoDB will match any element in the array
+    ];
+  }
+
+  // Define allowed sort fields
+  const allowedSortFields = {
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt',
+    severityLevel: 'severityLevel',
+    preliminaryDiagnosis: 'preliminaryDiagnosis'
+  };
+
+  const sortField = allowedSortFields[sortBy] || 'createdAt';
+  const sortDirection = sortOrder === 'asc' ? 1 : -1;
+  const sort = { [sortField]: sortDirection };
+
+  // Calculate pagination
+  const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10);
+
+  // Fetch triages with pagination
+  const [triages, total] = await Promise.all([
+    Triage.find(filter)
+      .populate('patient', 'name age gender')
+      .populate('psychologist', 'name email')
+      .sort(sort)
+      .skip(skip)
+      .limit(parseInt(limit, 10))
+      .lean(),
+    Triage.countDocuments(filter)
+  ]);
+
+  return {
+    triages,
+    pagination: {
+      currentPage: parseInt(page, 10),
+      totalPages: Math.ceil(total / parseInt(limit, 10)) || 1,
+      totalItems: total,
+      itemsPerPage: parseInt(limit, 10),
+      hasNextPage: skip + parseInt(limit, 10) < total,
+      hasPrevPage: parseInt(page, 10) > 1
+    }
+  };
 }
 
 /**
