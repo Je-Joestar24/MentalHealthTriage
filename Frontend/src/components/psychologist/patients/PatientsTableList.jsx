@@ -164,7 +164,7 @@ const PatientsTableList = ({
                       </Tooltip>
                       <Tooltip title="View Triage History">
                         <span>
-                          <IconButton size="small" onClick={() => onViewPatient?.(row)}>
+                          <IconButton size="small" onClick={() => onViewTriage?.(row)}>
                             <HistoryOutlinedIcon fontSize="small" />
                           </IconButton>
                         </span>
