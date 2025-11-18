@@ -27,6 +27,30 @@ export const matchDiagnoses = createAsyncThunk(
 );
 
 /**
+ * Get triage history for a patient
+ */
+export const getTriageHistory = createAsyncThunk(
+  'triage/getTriageHistory',
+  async ({ patientId, queryParams = {} }, { rejectWithValue, dispatch }) => {
+    try {
+      const result = await triageService.getTriageHistory(patientId, queryParams);
+      if (!result.success) {
+        dispatch(displayNotification({ 
+          message: result.error || 'Failed to fetch triage history', 
+          type: 'error' 
+        }));
+        return rejectWithValue(result.error || 'Failed to fetch triage history');
+      }
+      return result;
+    } catch (error) {
+      const message = error?.message || 'Failed to fetch triage history';
+      dispatch(displayNotification({ message, type: 'error' }));
+      return rejectWithValue(message);
+    }
+  }
+);
+
+/**
  * Create a new triage record
  */
 export const createTriage = createAsyncThunk(
@@ -59,6 +83,9 @@ const initialState = {
   matchCount: 0,
   matchQuery: null,
   currentTriage: null,
+  triageHistory: [],
+  triageHistoryPagination: null,
+  triageHistoryCount: 0,
   loading: false,
   error: null,
   success: null
@@ -79,6 +106,11 @@ const triageSlice = createSlice({
     clearMessages: (state) => {
       state.error = null;
       state.success = null;
+    },
+    clearTriageHistory: (state) => {
+      state.triageHistory = [];
+      state.triageHistoryPagination = null;
+      state.triageHistoryCount = 0;
     },
     setLoading: (state, action) => {
       state.loading = action.payload;
@@ -122,6 +154,25 @@ const triageSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
         state.success = null;
+      })
+      // Get triage history
+      .addCase(getTriageHistory.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getTriageHistory.fulfilled, (state, action) => {
+        state.loading = false;
+        state.triageHistory = action.payload.data || [];
+        state.triageHistoryPagination = action.payload.pagination || null;
+        state.triageHistoryCount = action.payload.count || 0;
+        state.error = null;
+      })
+      .addCase(getTriageHistory.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.triageHistory = [];
+        state.triageHistoryPagination = null;
+        state.triageHistoryCount = 0;
       });
   }
 });
@@ -129,7 +180,8 @@ const triageSlice = createSlice({
 export const { 
   clearMatchedDiagnoses, 
   clearCurrentTriage, 
-  clearMessages, 
+  clearMessages,
+  clearTriageHistory,
   setLoading 
 } = triageSlice.actions;
 

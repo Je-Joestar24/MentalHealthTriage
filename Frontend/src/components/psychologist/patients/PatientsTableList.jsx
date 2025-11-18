@@ -16,12 +16,13 @@ import {
   Tooltip,
   Skeleton
 } from '@mui/material';
-import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
+import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined';
 import RestoreOutlinedIcon from '@mui/icons-material/RestoreOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import HistoryEduOutlinedIcon from '@mui/icons-material/HistoryEduOutlined';
 import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import { useNavigate } from 'react-router-dom';
 
 const formatDate = (value) => {
   if (!value) return '—';
@@ -31,6 +32,7 @@ const formatDate = (value) => {
     day: 'numeric'
   });
 };
+
 
 const StatusChip = ({ status = 'inactive', isDeleted = false }) => {
   if (isDeleted) {
@@ -74,6 +76,11 @@ const PatientsTableList = ({
   onDelete,
   onRestore
 }) => {
+
+  const navigate = useNavigate();
+  const handleStartTriage = (id) => {
+    navigate(`/psychologist/triage/${id}`);
+  }
   return (
     <Card elevation={0} sx={{ borderRadius: 2, border: (theme) => `1px solid ${theme.palette.divider}` }}>
       <TableContainer>
@@ -142,23 +149,23 @@ const PatientsTableList = ({
                   </TableCell>
                   <TableCell align="right">
                     <Stack direction="row" spacing={1} justifyContent="flex-end">
-                      <Tooltip title="View triage records">
+                      <Tooltip title="Start Triage">
                         <span>
                           <Button
                             size="small"
                             variant="outlined"
-                            sx={{py:'1px'}}
+                            sx={{ py: '1px' }}
                             startIcon={<HistoryEduOutlinedIcon />}
-                            onClick={() => onViewTriage?.(row)}
+                            onClick={() => handleStartTriage(row?._id)}
                           >
                             Triage
                           </Button>
                         </span>
                       </Tooltip>
-                      <Tooltip title="View details">
+                      <Tooltip title="View Triage History">
                         <span>
                           <IconButton size="small" onClick={() => onViewPatient?.(row)}>
-                            <VisibilityOutlinedIcon fontSize="small" />
+                            <HistoryOutlinedIcon fontSize="small" />
                           </IconButton>
                         </span>
                       </Tooltip>
@@ -174,7 +181,7 @@ const PatientsTableList = ({
                         <>
                           <Tooltip title="Edit patient">
                             <span>
-                          <IconButton size="small" onClick={() => onEdit?.(row)}>
+                              <IconButton size="small" onClick={() => onEdit?.(row)}>
                                 <EditOutlinedIcon fontSize="small" />
                               </IconButton>
                             </span>
