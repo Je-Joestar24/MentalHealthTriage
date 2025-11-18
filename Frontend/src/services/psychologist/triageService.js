@@ -28,6 +28,42 @@ export const matchDiagnoses = async (symptoms = [], system = null) => {
 };
 
 /**
+ * Get triage history for a patient
+ * @param {string} patientId - Patient ID
+ * @param {Object} queryParams - Query parameters
+ * @param {number} queryParams.page - Page number (default: 1)
+ * @param {number} queryParams.limit - Items per page (default: 10)
+ * @param {string} queryParams.search - Search term
+ * @param {string} queryParams.sortBy - Sort field: 'createdAt', 'updatedAt', 'severityLevel', 'preliminaryDiagnosis'
+ * @param {string} queryParams.sortOrder - Sort order: 'asc' or 'desc'
+ * @returns {Promise<{success: boolean, data?: Array, pagination?: Object, error?: string, count?: number}>}
+ */
+export const getTriageHistory = async (patientId, queryParams = {}) => {
+  try {
+    const params = new URLSearchParams();
+    if (queryParams.page) params.append('page', queryParams.page);
+    if (queryParams.limit) params.append('limit', queryParams.limit);
+    if (queryParams.search) params.append('search', queryParams.search);
+    if (queryParams.sortBy) params.append('sortBy', queryParams.sortBy);
+    if (queryParams.sortOrder) params.append('sortOrder', queryParams.sortOrder);
+
+    const queryString = params.toString();
+    const url = `${BASE_URL}/patients/${patientId}/triage${queryString ? `?${queryString}` : ''}`;
+    
+    const { data } = await api.get(url);
+    return {
+      success: data.success ?? true,
+      data: data.data || [],
+      pagination: data.pagination,
+      count: data.count || 0
+    };
+  } catch (error) {
+    const message = error?.response?.data?.error || error.message || 'Failed to fetch triage history';
+    return { success: false, error: message };
+  }
+};
+
+/**
  * Create a new triage record for a patient
  * @param {string} patientId - Patient ID
  * @param {Object} triageData - Triage data

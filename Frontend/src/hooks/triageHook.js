@@ -3,9 +3,11 @@ import { useDispatch, useSelector } from 'react-redux';
 import {
   matchDiagnoses as matchDiagnosesThunk,
   createTriage as createTriageThunk,
+  getTriageHistory as getTriageHistoryThunk,
   clearMatchedDiagnoses,
   clearCurrentTriage,
   clearMessages,
+  clearTriageHistory,
   setLoading
 } from '../store/triageSlice';
 import { displayNotification, setLoading as setGlobalLoading } from '../store/uiSlice';
@@ -92,10 +94,38 @@ const useTriage = () => {
   }, [dispatch]);
 
   /**
+   * Get triage history for a patient
+   * @param {string} patientId - Patient ID
+   * @param {Object} queryParams - Query parameters (page, limit, search, sortBy, sortOrder)
+   */
+  const getTriageHistory = useCallback(
+    async (patientId, queryParams = {}) => {
+      if (!patientId) {
+        dispatch(displayNotification({ 
+          message: 'Patient ID is required', 
+          type: 'error' 
+        }));
+        return { success: false, error: 'Patient ID is required' };
+      }
+
+      const result = await dispatch(getTriageHistoryThunk({ patientId, queryParams }));
+      return result;
+    },
+    [dispatch]
+  );
+
+  /**
    * Clear all messages
    */
   const clearAllMessages = useCallback(() => {
     dispatch(clearMessages());
+  }, [dispatch]);
+
+  /**
+   * Clear triage history
+   */
+  const clearHistory = useCallback(() => {
+    dispatch(clearTriageHistory());
   }, [dispatch]);
 
   return {
@@ -104,6 +134,9 @@ const useTriage = () => {
     matchCount: triageState.matchCount,
     matchQuery: triageState.matchQuery,
     currentTriage: triageState.currentTriage,
+    triageHistory: triageState.triageHistory,
+    triageHistoryPagination: triageState.triageHistoryPagination,
+    triageHistoryCount: triageState.triageHistoryCount,
     loading: triageState.loading,
     error: triageState.error,
     success: triageState.success,
@@ -111,8 +144,10 @@ const useTriage = () => {
     // Actions
     matchDiagnoses,
     createTriage,
+    getTriageHistory,
     clearMatched,
     clearTriage,
+    clearHistory,
     clearAllMessages
   };
 };
