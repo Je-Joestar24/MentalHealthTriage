@@ -16,6 +16,7 @@ import IndividualAccounts from "../pages/Admin/IndividualAccounts";
 import TriagePatient from "../pages/Psychologist/TriagePatient";
 import PatientsList from "../pages/Psychologist/PatientsList";
 import PsychologistDiagnosisList from "../pages/Psychologist/PsychologistDiagnosisList";
+import PatientsTriageHistory from "../pages/Psychologist/PatientsTriageHistory";
 
 const router = createBrowserRouter([
     {
@@ -144,6 +145,13 @@ const router = createBrowserRouter([
                         path: "diagnosis/list", element: (
                             <RequireAuth roles={["psychologist"]}>
                                 <PsychologistDiagnosisList />
+                            </RequireAuth>
+                        )
+                    },
+                    {
+                        path: "patients/history/:patientId", element: (
+                            <RequireAuth roles={["psychologist"]}>
+                                <PatientsTriageHistory />
                             </RequireAuth>
                         )
                     },

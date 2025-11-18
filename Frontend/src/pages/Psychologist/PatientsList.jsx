@@ -4,6 +4,7 @@ import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import RefreshOutlinedIcon from '@mui/icons-material/RefreshOutlined';
 import { motion } from 'framer-motion';
 import { useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import PatientsFilter from '../../components/psychologist/patients/PatientsFilter';
 import PatientsTableList from '../../components/psychologist/patients/PatientsTableList';
 import PatientsPagination from '../../components/psychologist/patients/PatientsPagination';
@@ -14,6 +15,7 @@ import { showGlobalDialog } from '../../store/uiSlice';
 
 export default function PatientsList() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const {
     list,
     pagination,
@@ -78,8 +80,8 @@ export default function PatientsList() {
   }, []);
 
   const handleViewTriage = useCallback((patient) => {
-    console.log('TODO: view triage history', patient);
-  }, []);
+    navigate(`/psychologist/patients/history/${patient._id}`);
+  }, [navigate]);
 
   const handleEditPatient = useCallback((patient) => {
     setSelectedPatient(patient);
