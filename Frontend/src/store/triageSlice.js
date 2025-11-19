@@ -7,9 +7,9 @@ import { displayNotification } from './uiSlice';
  */
 export const matchDiagnoses = createAsyncThunk(
   'triage/matchDiagnoses',
-  async ({ symptoms, system }, { rejectWithValue, dispatch }) => {
+  async ({ symptoms, system, queryParams }, { rejectWithValue, dispatch }) => {
     try {
-      const result = await triageService.matchDiagnoses(symptoms, system);
+      const result = await triageService.matchDiagnoses(symptoms, system, queryParams);
       if (!result.success) {
         dispatch(displayNotification({ 
           message: result.error || 'Failed to match diagnoses', 
@@ -82,6 +82,7 @@ const initialState = {
   matchedDiagnoses: [],
   matchCount: 0,
   matchQuery: null,
+  matchPagination: null,
   currentTriage: null,
   triageHistory: [],
   triageHistoryPagination: null,
@@ -99,6 +100,7 @@ const triageSlice = createSlice({
       state.matchedDiagnoses = [];
       state.matchCount = 0;
       state.matchQuery = null;
+      state.matchPagination = null;
     },
     clearCurrentTriage: (state) => {
       state.currentTriage = null;
@@ -122,14 +124,14 @@ const triageSlice = createSlice({
       .addCase(matchDiagnoses.pending, (state) => {
         state.loading = true;
         state.error = null;
-        state.matchedDiagnoses = [];
-        state.matchCount = 0;
+        // Don't clear matchedDiagnoses on pending to avoid flickering during pagination
       })
       .addCase(matchDiagnoses.fulfilled, (state, action) => {
         state.loading = false;
         state.matchedDiagnoses = action.payload.data || [];
         state.matchCount = action.payload.count || 0;
         state.matchQuery = action.payload.query || null;
+        state.matchPagination = action.payload.pagination || null;
         state.error = null;
       })
       .addCase(matchDiagnoses.rejected, (state, action) => {
@@ -137,6 +139,7 @@ const triageSlice = createSlice({
         state.error = action.payload;
         state.matchedDiagnoses = [];
         state.matchCount = 0;
+        state.matchPagination = null;
       })
       // Create triage
       .addCase(createTriage.pending, (state) => {

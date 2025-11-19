@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import {
     Box,
     Stack,
@@ -6,15 +6,64 @@ import {
     Card,
     Chip,
     Divider,
-    CircularProgress
+    CircularProgress,
+    Button,
+    Select,
+    MenuItem,
+    FormControl,
+    InputLabel
 } from '@mui/material';
 import { motion } from 'framer-motion';
+import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
+import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import useTriage from '../../../hooks/triageHook';
 
-export default function TriageRightPanel() {
-    const { matchedDiagnoses, matchCount, loading } = useTriage();
+const LIMIT_OPTIONS = [2, 5, 10, 20, 50];
 
-    if (loading) {
+export default function TriageRightPanel() {
+    const { matchedDiagnoses, matchCount, matchPagination, matchQuery, loading, matchDiagnoses: matchDiagnosesAction } = useTriage();
+    const [limit, setLimit] = useState(2);
+
+    // Sync limit with pagination when it changes
+    useEffect(() => {
+        if (matchPagination?.itemsPerPage) {
+            setLimit(matchPagination.itemsPerPage);
+        }
+    }, [matchPagination?.itemsPerPage]);
+
+    const handlePageChange = useCallback((event, page) => {
+        if (!matchPagination) return;
+        
+        // Get current system filter and symptoms from matchQuery
+        const system = matchQuery?.system || null;
+        const symptoms = matchQuery?.symptoms || [];
+        const showAll = matchQuery?.showAll || (symptoms.length === 0);
+        
+        matchDiagnosesAction(symptoms, system, {
+            page,
+            limit: limit,
+            showAll
+        });
+    }, [matchPagination, matchQuery, matchDiagnosesAction, limit]);
+
+    const handleLimitChange = useCallback((event) => {
+        const newLimit = event.target.value;
+        setLimit(newLimit);
+        
+        // Get current system filter and symptoms from matchQuery
+        const system = matchQuery?.system || null;
+        const symptoms = matchQuery?.symptoms || [];
+        const showAll = matchQuery?.showAll || (symptoms.length === 0);
+        
+        // Reset to page 1 when limit changes
+        matchDiagnosesAction(symptoms, system, {
+            page: 1,
+            limit: newLimit,
+            showAll
+        });
+    }, [matchQuery, matchDiagnosesAction]);
+
+    if (loading && matchedDiagnoses.length === 0) {
         return (
             <Box
                 sx={{
@@ -37,9 +86,11 @@ export default function TriageRightPanel() {
             transition={{ duration: 0.4 }}
             sx={{
                 height: '100%',
+                width: '100%',
                 display: 'flex',
                 flexDirection: 'column',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                minWidth: 0
             }}
         >
             {/* Header */}
@@ -57,7 +108,10 @@ export default function TriageRightPanel() {
                 sx={{
                     flex: 1,
                     overflowY: 'auto',
+                    overflowX: 'hidden',
                     pr: 1,
+                    width: '100%',
+                    minWidth: 0,
                     '&::-webkit-scrollbar': {
                         width: '6px'
                     },
@@ -89,7 +143,13 @@ export default function TriageRightPanel() {
                         </Typography>
                     </Box>
                 ) : (
-                    <Stack spacing={2}>
+                    <Stack 
+                        spacing={2}
+                        sx={{
+                            width: '100%',
+                            minWidth: 0
+                        }}
+                    >
                         {matchedDiagnoses.map((diagnosis, index) => (
                             <Card
                                 key={diagnosis._id || index}
@@ -108,7 +168,9 @@ export default function TriageRightPanel() {
                                         borderColor: 'primary.main',
                                         boxShadow: '0 2px 8px rgba(37, 99, 235, 0.1)'
                                     },
-                                    width: '100%'
+                                    width: '100%',
+                                    minWidth: { xs: '100%', md: '300px' },
+                                    maxWidth: { xs: '100%', md: '100%' }
                                 }}
                             >
                                 <Stack spacing={1.5}>
@@ -248,16 +310,82 @@ export default function TriageRightPanel() {
                 )}
             </Box>
 
-            {/* Footer */}
-            {
-                matchedDiagnoses.length > 0 && (
-                    <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                            Showing {matchCount} diagnosis{matchCount !== 1 ? 'es' : ''}
-                        </Typography>
-                    </Box>
-                )
-            }
+            {/* Footer with Pagination */}
+            <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2} flexWrap="wrap">
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                        {matchPagination ? (
+                            <>Showing {((matchPagination.currentPage - 1) * matchPagination.itemsPerPage) + 1} - {Math.min(matchPagination.currentPage * matchPagination.itemsPerPage, matchPagination.totalItems)} of {matchPagination.totalItems} diagnoses</>
+                        ) : (
+                            <>Showing {matchCount} diagnosis{matchCount !== 1 ? 'es' : ''}</>
+                        )}
+                    </Typography>
+                    <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+                        {/* Limit Selector */}
+                        <FormControl size="small" sx={{ minWidth: 80 }}>
+                            <InputLabel sx={{ fontSize: '0.7rem' }}>Limit</InputLabel>
+                            <Select
+                                value={limit}
+                                label="Limit"
+                                onChange={handleLimitChange}
+                                disabled={loading}
+                                sx={{
+                                    fontSize: '0.7rem',
+                                    height: 28,
+                                    '& .MuiSelect-select': {
+                                        py: 0.5,
+                                        fontSize: '0.7rem'
+                                    }
+                                }}
+                            >
+                                {LIMIT_OPTIONS.map((option) => (
+                                    <MenuItem key={option} value={option} sx={{ fontSize: '0.7rem', py: 0.5 }}>
+                                        {option}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                        {/* Pagination Controls */}
+                        {matchPagination && matchPagination.totalPages > 1 && (
+                            <Stack direction="row" spacing={1} alignItems="center">
+                                <Button
+                                    size="small"
+                                    onClick={() => handlePageChange(null, matchPagination.currentPage - 1)}
+                                    disabled={!matchPagination.hasPrevPage || loading}
+                                    startIcon={<KeyboardArrowLeftIcon sx={{ fontSize: 16 }} />}
+                                    sx={{
+                                        fontSize: '0.7rem',
+                                        px: 1,
+                                        py: 0.5,
+                                        minHeight: 28,
+                                        textTransform: 'none'
+                                    }}
+                                >
+                                    Prev
+                                </Button>
+                                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem', px: 1 }}>
+                                    Page {matchPagination.currentPage} of {matchPagination.totalPages}
+                                </Typography>
+                                <Button
+                                    size="small"
+                                    onClick={() => handlePageChange(null, matchPagination.currentPage + 1)}
+                                    disabled={!matchPagination.hasNextPage || loading}
+                                    endIcon={<KeyboardArrowRightIcon sx={{ fontSize: 16 }} />}
+                                    sx={{
+                                        fontSize: '0.7rem',
+                                        px: 1,
+                                        py: 0.5,
+                                        minHeight: 28,
+                                        textTransform: 'none'
+                                    }}
+                                >
+                                    Next
+                                </Button>
+                            </Stack>
+                        )}
+                    </Stack>
+                </Stack>
+            </Box>
         </Box >
     );
 }
