@@ -1,6 +1,8 @@
 import Organization from '../models/Organization.js';
 import User from '../models/User.js';
 import Diagnosis from '../models/Diagnosis.js';
+import Patient from '../models/Patient.js';
+import Triage from '../models/Triage.js';
 
 /**
  * Get dashboard statistics/counts
@@ -128,6 +130,250 @@ export const getDashboardStats = async () => {
       individualPsychologists: totalIndividualAccounts, // Same as individual accounts
       companyAdmins: companyAdmins,
       superAdmins: superAdmins
+    }
+  };
+};
+
+/**
+ * Get dashboard statistics for a psychologist
+ * Returns counts for patients, triages, diagnoses, and activity metrics
+ */
+export const getPsychologistDashboardStats = async (psychologistId) => {
+  const now = new Date();
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - now.getDay()); // Start of week (Sunday)
+  startOfWeek.setHours(0, 0, 0, 0);
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
+
+  // Patient counts
+  const totalPatients = await Patient.countDocuments({
+    assignedPsychologist: psychologistId
+  });
+
+  const activePatients = await Patient.countDocuments({
+    assignedPsychologist: psychologistId,
+    status: 'active',
+    isDeleted: false
+  });
+
+  const inactivePatients = await Patient.countDocuments({
+    assignedPsychologist: psychologistId,
+    status: 'inactive',
+    isDeleted: false
+  });
+
+  const deletedPatients = await Patient.countDocuments({
+    assignedPsychologist: psychologistId,
+    isDeleted: true
+  });
+
+  // Recent patients (last 30 days)
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const recentPatients = await Patient.countDocuments({
+    assignedPsychologist: psychologistId,
+    createdAt: { $gte: thirtyDaysAgo }
+  });
+
+  // Triage counts
+  const totalTriages = await Triage.countDocuments({
+    psychologist: psychologistId
+  });
+
+  const triagesBySeverity = {
+    low: await Triage.countDocuments({
+      psychologist: psychologistId,
+      severityLevel: 'low'
+    }),
+    moderate: await Triage.countDocuments({
+      psychologist: psychologistId,
+      severityLevel: 'moderate'
+    }),
+    high: await Triage.countDocuments({
+      psychologist: psychologistId,
+      severityLevel: 'high'
+    })
+  };
+
+  // Recent triages
+  const triagesToday = await Triage.countDocuments({
+    psychologist: psychologistId,
+    createdAt: { $gte: startOfToday }
+  });
+
+  const triagesThisWeek = await Triage.countDocuments({
+    psychologist: psychologistId,
+    createdAt: { $gte: startOfWeek }
+  });
+
+  const triagesThisMonth = await Triage.countDocuments({
+    psychologist: psychologistId,
+    createdAt: { $gte: startOfMonth }
+  });
+
+  const triagesThisYear = await Triage.countDocuments({
+    psychologist: psychologistId,
+    createdAt: { $gte: startOfYear }
+  });
+
+  // Diagnosis counts (personal diagnoses created by this psychologist)
+  const totalPersonalDiagnoses = await Diagnosis.countDocuments({
+    type: 'personal',
+    createdBy: psychologistId
+  });
+
+  // Get accessible diagnoses count (global + organization + personal)
+  const psychologist = await User.findById(psychologistId).lean();
+  const accessibleDiagnosesFilter = {
+    $or: [
+      { type: 'global' },
+      ...(psychologist?.organization ? [{ type: 'organization', organization: psychologist.organization }] : []),
+      { type: 'personal', createdBy: psychologistId }
+    ]
+  };
+  const accessibleDiagnoses = await Diagnosis.countDocuments(accessibleDiagnosesFilter);
+
+  // Recent diagnoses created
+  const recentPersonalDiagnoses = await Diagnosis.countDocuments({
+    type: 'personal',
+    createdBy: psychologistId,
+    createdAt: { $gte: thirtyDaysAgo }
+  });
+
+  // Activity metrics
+  // Patients with most triages (top 5)
+  const patientsWithMostTriages = await Patient.aggregate([
+    {
+      $match: {
+        assignedPsychologist: psychologistId,
+        isDeleted: false
+      }
+    },
+    {
+      $project: {
+        name: 1,
+        age: 1,
+        gender: 1,
+        triageCount: { $size: { $ifNull: ['$triageRecords', []] } }
+      }
+    },
+    {
+      $sort: { triageCount: -1 }
+    },
+    {
+      $limit: 5
+    }
+  ]);
+
+  // Recent triages (last 5)
+  const recentTriages = await Triage.find({
+    psychologist: psychologistId
+  })
+    .populate('patient', 'name age gender')
+    .sort({ createdAt: -1 })
+    .limit(5)
+    .lean();
+
+  // Average triages per patient
+  const patientsWithTriages = await Patient.countDocuments({
+    assignedPsychologist: psychologistId,
+    triageRecords: { $exists: true, $ne: [] },
+    isDeleted: false
+  });
+  const averageTriagesPerPatient = patientsWithTriages > 0 
+    ? (totalTriages / patientsWithTriages).toFixed(2)
+    : 0;
+
+  // Monthly triage trend (last 6 months)
+  const sixMonthsAgo = new Date();
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+  
+  const monthlyTriageTrend = await Triage.aggregate([
+    {
+      $match: {
+        psychologist: psychologistId,
+        createdAt: { $gte: sixMonthsAgo }
+      }
+    },
+    {
+      $group: {
+        _id: {
+          year: { $year: '$createdAt' },
+          month: { $month: '$createdAt' }
+        },
+        count: { $sum: 1 }
+      }
+    },
+    {
+      $sort: { '_id.year': 1, '_id.month': 1 }
+    },
+    {
+      $project: {
+        _id: 0,
+        month: {
+          $concat: [
+            { $toString: '$_id.year' },
+            '-',
+            { $cond: [{ $lt: ['$_id.month', 10] }, '0', ''] },
+            { $toString: '$_id.month' }
+          ]
+        },
+        count: 1
+      }
+    }
+  ]);
+
+  return {
+    patients: {
+      total: totalPatients,
+      active: activePatients,
+      inactive: inactivePatients,
+      deleted: deletedPatients,
+      recent: recentPatients // Last 30 days
+    },
+    triages: {
+      total: totalTriages,
+      bySeverity: triagesBySeverity,
+      today: triagesToday,
+      thisWeek: triagesThisWeek,
+      thisMonth: triagesThisMonth,
+      thisYear: triagesThisYear,
+      averagePerPatient: parseFloat(averageTriagesPerPatient)
+    },
+    diagnoses: {
+      personal: totalPersonalDiagnoses,
+      accessible: accessibleDiagnoses, // Global + organization + personal
+      recent: recentPersonalDiagnoses // Last 30 days
+    },
+    activity: {
+      patientsWithMostTriages: patientsWithMostTriages.map(p => ({
+        name: p.name,
+        age: p.age,
+        gender: p.gender,
+        triageCount: p.triageCount
+      })),
+      recentTriages: recentTriages.map(t => ({
+        _id: t._id,
+        patient: t.patient ? {
+          name: t.patient.name,
+          age: t.patient.age,
+          gender: t.patient.gender
+        } : null,
+        severityLevel: t.severityLevel,
+        symptomsCount: t.symptoms?.length || 0,
+        createdAt: t.createdAt
+      })),
+      monthlyTrend: monthlyTriageTrend
+    },
+    summary: {
+      totalPatients: totalPatients,
+      totalTriages: totalTriages,
+      totalPersonalDiagnoses: totalPersonalDiagnoses,
+      activePatients: activePatients,
+      triagesThisMonth: triagesThisMonth
     }
   };
 };
