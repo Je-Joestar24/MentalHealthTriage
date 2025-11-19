@@ -324,22 +324,69 @@ export default function StartTriage() {
                         border: '1px solid',
                         borderColor: 'divider',
                         bgcolor: 'background.paper',
-                        minHeight: 600
+                        minHeight: 600,
+                        width: '100%'
                     }}
                 >
-                    <Grid container spacing={2.5} sx={{ height: '100%' }}>
+                    <Grid 
+                        container 
+                        spacing={2.5}
+                        columns={12}
+                        sx={{ 
+                            height: '100%',
+                            width: '100%',
+                            margin: 0
+                        }}
+                    >
                         {/* Left Panel - Form */}
-                        <Grid item xs={12} md={5}>
+                        <Grid 
+                            item 
+                            xs={12} 
+                            md={5}
+                            sx={{
+                                width: '30%',
+                                minWidth: 0,
+                                display: 'flex',
+                                flexDirection: 'column'
+                            }}
+                        >
                             <TriageLeftPanel patientId={id} onSave={handleSaveTriage} />
                         </Grid>
 
                         {/* Divider */}
-                        <Grid item xs={12} md={0.5} sx={{ display: { xs: 'none', md: 'block' } }}>
-                            <Divider orientation="vertical" sx={{ height: '100%', mx: 'auto' }} />
+                        <Grid 
+                            item 
+                            xs={0} 
+                            md={0.5}
+                            sx={{ 
+                                display: { xs: 'none', md: 'flex' },
+                                justifyContent: 'center',
+                                alignItems: 'stretch',
+                                minWidth: 0,
+                                px: 0
+                            }}
+                        >
+                            <Divider 
+                                orientation="vertical" 
+                                sx={{ 
+                                    height: '100%',
+                                    width: '5%'
+                                }} 
+                            />
                         </Grid>
 
                         {/* Right Panel - Diagnosis List */}
-                        <Grid item xs={12} md={6.5}>
+                        <Grid 
+                            item 
+                            xs={12} 
+                            md={6.5}
+                            sx={{
+                                width: '65%',
+                                minWidth: 0,
+                                display: 'flex',
+                                flexDirection: 'column'
+                            }}
+                        >
                             <TriageRightPanel />
                         </Grid>
                     </Grid>

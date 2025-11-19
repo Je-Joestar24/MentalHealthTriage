@@ -115,10 +115,10 @@ export const createTriage = asyncWrapper(async (req, res) => {
 /**
  * GET /api/psychologist/triage/match-diagnoses
  * Match diagnoses based on symptoms
- * Query params: symptoms (comma-separated or array), system (DSM-5 or ICD-10)
+ * Query params: symptoms (comma-separated or array), system (DSM-5 or ICD-10), page, limit, showAll
  */
 export const matchDiagnoses = asyncWrapper(async (req, res) => {
-  const { symptoms, system } = req.query;
+  const { symptoms, system, page, limit, showAll } = req.query;
   const user = req.user;
 
   // Parse symptoms from query
@@ -137,23 +137,42 @@ export const matchDiagnoses = asyncWrapper(async (req, res) => {
     symptomsArray = req.body.symptoms;
   }
 
-  if (symptomsArray.length === 0) {
+  // Build query params
+  const queryParams = {
+    page: page ? parseInt(page, 10) : 1,
+    limit: limit ? parseInt(limit, 10) : 20,
+    showAll: showAll === 'true' || showAll === true
+  };
+
+  // If no symptoms and showAll is false, return empty
+  if (symptomsArray.length === 0 && !queryParams.showAll) {
     return res.json({
       success: true,
       data: [],
+      pagination: {
+        currentPage: 1,
+        totalPages: 0,
+        totalItems: 0,
+        itemsPerPage: queryParams.limit,
+        hasNextPage: false,
+        hasPrevPage: false
+      },
+      count: 0,
       message: 'No symptoms provided'
     });
   }
 
-  const matchedDiagnoses = await triageService.matchDiagnoses(symptomsArray, system, user);
+  const result = await triageService.matchDiagnoses(symptomsArray, system, user, queryParams);
 
   res.json({
     success: true,
-    data: matchedDiagnoses,
-    count: matchedDiagnoses.length,
+    data: result.diagnoses,
+    pagination: result.pagination,
+    count: result.diagnoses.length,
     query: {
       symptoms: symptomsArray,
-      system: system || 'all'
+      system: system || 'all',
+      showAll: queryParams.showAll
     }
   });
 });

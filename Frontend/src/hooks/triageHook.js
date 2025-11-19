@@ -18,12 +18,14 @@ const useTriage = () => {
 
   /**
    * Match diagnoses based on symptoms
-   * @param {Array<string>} symptoms - Array of symptom strings
+   * @param {Array<string>} symptoms - Array of symptom strings (optional if showAll=true)
    * @param {string} system - Optional: 'DSM-5' or 'ICD-10'
+   * @param {Object} queryParams - Optional: { page, limit, showAll }
    */
   const matchDiagnoses = useCallback(
-    async (symptoms, system = null) => {
-      if (!symptoms || !Array.isArray(symptoms) || symptoms.length === 0) {
+    async (symptoms = [], system = null, queryParams = {}) => {
+      // Allow empty symptoms if showAll is true
+      if (!queryParams.showAll && (!symptoms || !Array.isArray(symptoms) || symptoms.length === 0)) {
         dispatch(displayNotification({ 
           message: 'Please provide at least one symptom', 
           type: 'warning' 
@@ -31,7 +33,7 @@ const useTriage = () => {
         return { success: false, error: 'No symptoms provided' };
       }
 
-      const result = await dispatch(matchDiagnosesThunk({ symptoms, system }));
+      const result = await dispatch(matchDiagnosesThunk({ symptoms, system, queryParams }));
       return result;
     },
     [dispatch]
@@ -133,6 +135,7 @@ const useTriage = () => {
     matchedDiagnoses: triageState.matchedDiagnoses,
     matchCount: triageState.matchCount,
     matchQuery: triageState.matchQuery,
+    matchPagination: triageState.matchPagination,
     currentTriage: triageState.currentTriage,
     triageHistory: triageState.triageHistory,
     triageHistoryPagination: triageState.triageHistoryPagination,

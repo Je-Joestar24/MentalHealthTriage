@@ -6,18 +6,54 @@ const BASE_URL = '/api/psychologist/triage';
  * Match diagnoses based on symptoms
  * @param {Array<string>} symptoms - Array of symptom strings
  * @param {string} system - Optional: 'DSM-5' or 'ICD-10'
- * @returns {Promise<{success: boolean, data?: Array, error?: string, count?: number}>}
+ * @param {Object} queryParams - Optional: { page, limit, showAll }
+ * @returns {Promise<{success: boolean, data?: Array, pagination?: Object, error?: string, count?: number}>}
  */
-export const matchDiagnoses = async (symptoms = [], system = null) => {
+export const matchDiagnoses = async (symptoms = [], system = null, queryParams = {}) => {
   try {
-    // Use POST method with body for better handling of array data
-    const { data } = await api.post(`${BASE_URL}/match-diagnoses`, {
-      symptoms,
-      ...(system && { system })
-    });
+    const params = new URLSearchParams();
+    
+    // Add symptoms to query if provided
+    if (symptoms && symptoms.length > 0) {
+      symptoms.forEach(symptom => {
+        params.append('symptoms', symptom);
+      });
+    }
+    
+    // Add system filter
+    if (system) {
+      params.append('system', system);
+    }
+    
+    // Add pagination params
+    if (queryParams.page) {
+      params.append('page', queryParams.page);
+    }
+    if (queryParams.limit) {
+      params.append('limit', queryParams.limit);
+    }
+    if (queryParams.showAll !== undefined) {
+      params.append('showAll', queryParams.showAll);
+    }
+    
+    const queryString = params.toString();
+    const url = `${BASE_URL}/match-diagnoses${queryString ? `?${queryString}` : ''}`;
+    
+    // Use GET method for query params, or POST if symptoms are in body
+    let response;
+    if (symptoms && symptoms.length > 0 && !queryString.includes('symptoms=')) {
+      // POST with body if symptoms array is large
+      response = await api.post(url, { symptoms });
+    } else {
+      // GET with query params
+      response = await api.get(url);
+    }
+    
+    const { data } = response;
     return {
       success: data.success ?? true,
       data: data.data || [],
+      pagination: data.pagination || null,
       count: data.count || 0,
       query: data.query
     };

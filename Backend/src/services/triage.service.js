@@ -13,37 +13,82 @@ function normalizeSymptom(symptom) {
 }
 
 /**
- * Match diagnoses based on symptoms
- * Returns diagnoses that have at least one matching symptom
+ * Check if two symptoms match (considering variations)
  */
-export async function matchDiagnoses(symptoms = [], systemFilter = null, user = null) {
-  if (!symptoms || symptoms.length === 0) {
-    return [];
+function symptomsMatch(symptom1, symptom2) {
+  const normalize = (s) => {
+    if (!s) return '';
+    return s.trim().replace(/^#+/, '').toLowerCase();
+  };
+
+  const s1 = normalize(symptom1);
+  const s2 = normalize(symptom2);
+
+  // Create variations for both symptoms
+  const createVariations = (s) => {
+    const withSpaces = s.replace(/_/g, ' ');
+    const withUnderscores = s.replace(/\s+/g, '_');
+    return [s, withSpaces, withUnderscores].filter((v, i, arr) => arr.indexOf(v) === i);
+  };
+
+  const s1Variations = createVariations(s1);
+  const s2Variations = createVariations(s2);
+
+  // Check if any variation matches (exact match or contains)
+  return s1Variations.some(v1 => 
+    s2Variations.some(v2 => 
+      v1 === v2 || v1.includes(v2) || v2.includes(v1)
+    )
+  );
+}
+
+/**
+ * Deduplicate symptoms by grouping similar ones
+ * Returns an array of unique symptom groups
+ */
+function deduplicateSymptoms(symptoms) {
+  const normalized = symptoms.map(normalizeSymptom).filter(s => s.length > 0);
+  const groups = [];
+
+  for (const symptom of normalized) {
+    // Check if this symptom belongs to any existing group
+    let foundGroup = false;
+    for (const group of groups) {
+      // If any symptom in the group matches this symptom, add to that group
+      if (group.some(groupSymptom => symptomsMatch(symptom, groupSymptom))) {
+        group.push(symptom);
+        foundGroup = true;
+        break;
+      }
+    }
+    // If no group found, create a new group
+    if (!foundGroup) {
+      groups.push([symptom]);
+    }
   }
 
-  // Normalize input symptoms
+  // Return the first symptom from each group (representative)
+  return groups.map(group => group[0]);
+}
+
+/**
+ * Match diagnoses based on symptoms
+ * Returns diagnoses with match counts (including 0 matches with pagination)
+ */
+export async function matchDiagnoses(symptoms = [], systemFilter = null, user = null, queryParams = {}) {
+  const {
+    page = 1,
+    limit = 20,
+    showAll = false // If true, show all diagnoses even with 0 matches
+  } = queryParams;
+
+  // Normalize and deduplicate input symptoms
   const normalizedSymptoms = symptoms
     .map(normalizeSymptom)
     .filter(s => s.length > 0);
 
-  if (normalizedSymptoms.length === 0) {
-    return [];
-  }
-
-  // Build filter for diagnoses - symptoms must match
-  // Handle both underscore and space variations (e.g., "mood_lability" and "mood lability")
-  const symptomFilter = {
-    $or: normalizedSymptoms.flatMap(symptom => {
-      // Create variations: original, with spaces, with underscores
-      const withSpaces = symptom.replace(/_/g, ' ');
-      const withUnderscores = symptom.replace(/\s+/g, '_');
-      const variations = [symptom, withSpaces, withUnderscores].filter((v, i, arr) => arr.indexOf(v) === i);
-      
-      return variations.map(variation => ({
-        symptoms: { $regex: new RegExp(variation.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') }
-      }));
-    })
-  };
+  // Deduplicate similar symptoms (e.g., "anxiety" and "anxiety_or_tension" become one group)
+  const deduplicatedSymptoms = deduplicateSymptoms(normalizedSymptoms);
 
   // Build system filter if provided
   const systemFilterObj = {};
@@ -70,56 +115,102 @@ export async function matchDiagnoses(symptoms = [], systemFilter = null, user = 
     ]
   };
 
-  // Combine all filters
-  const filterParts = [symptomFilter, accessibleFilter];
+  // Build base filter
+  const filterParts = [accessibleFilter];
   if (Object.keys(systemFilterObj).length > 0) {
     filterParts.push(systemFilterObj);
   }
 
-  const finalFilter = { $and: filterParts };
+  // If we have symptoms and want to filter, add symptom filter
+  // Otherwise, if showAll is true, we'll fetch all and calculate matches
+  let finalFilter = { $and: filterParts };
+  let shouldFilterBySymptoms = normalizedSymptoms.length > 0 && !showAll;
 
-  // Fetch diagnoses
-  const diagnoses = await Diagnosis.find(finalFilter).lean();
+  if (shouldFilterBySymptoms) {
+    // Build symptom filter for initial query
+    const symptomFilter = {
+      $or: deduplicatedSymptoms.flatMap(symptom => {
+        const withSpaces = symptom.replace(/_/g, ' ');
+        const withUnderscores = symptom.replace(/\s+/g, '_');
+        const variations = [symptom, withSpaces, withUnderscores].filter((v, i, arr) => arr.indexOf(v) === i);
+        
+        return variations.map(variation => ({
+          symptoms: { $regex: new RegExp(variation.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') }
+        }));
+      })
+    };
+    filterParts.push(symptomFilter);
+    finalFilter = { $and: filterParts };
+  }
+
+  // Calculate pagination
+  const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10);
+
+  // Fetch diagnoses with pagination
+  const [diagnoses, total] = await Promise.all([
+    Diagnosis.find(finalFilter)
+      .sort({ createdAt: -1 }) // Default sort
+      .skip(skip)
+      .limit(parseInt(limit, 10))
+      .lean(),
+    Diagnosis.countDocuments(finalFilter)
+  ]);
 
   // Calculate match scores and enrich with match information
   const matchedDiagnoses = diagnoses.map(diagnosis => {
     const diagnosisSymptoms = (diagnosis.symptoms || []).map(normalizeSymptom);
     
-    // Find matching symptoms - handle both underscore and space variations
-    const matchedSymptoms = normalizedSymptoms.filter(symptom => {
-      const withSpaces = symptom.replace(/_/g, ' ');
-      const withUnderscores = symptom.replace(/\s+/g, '_');
-      const variations = [symptom, withSpaces, withUnderscores];
-      
-      return diagnosisSymptoms.some(ds => {
-        const dsWithSpaces = ds.replace(/_/g, ' ');
-        const dsWithUnderscores = ds.replace(/\s+/g, '_');
-        const dsVariations = [ds, dsWithSpaces, dsWithUnderscores];
-        
-        // Check if any variation matches
-        return variations.some(v => dsVariations.some(dsv => 
-          dsv.includes(v) || v.includes(dsv) || dsv === v
-        ));
-      });
+    // Count unique diagnosis symptoms that matched (not input symptoms)
+    // This ensures "anxiety" and "anxiety_or_tension" only count as 1 if diagnosis has only one
+    const matchedDiagnosisSymptoms = diagnosisSymptoms.filter(ds => {
+      // Check if this diagnosis symptom matches ANY of the deduplicated input symptoms
+      return deduplicatedSymptoms.some(inputSymptom => 
+        symptomsMatch(inputSymptom, ds)
+      );
     });
 
-    const matchCount = matchedSymptoms.length;
+    // Also track which input symptoms were matched (for display)
+    const matchedInputSymptoms = deduplicatedSymptoms.filter(inputSymptom => {
+      return diagnosisSymptoms.some(ds => symptomsMatch(inputSymptom, ds));
+    });
+
+    const matchCount = matchedDiagnosisSymptoms.length;
     const matchPercentage = diagnosisSymptoms.length > 0
       ? (matchCount / diagnosisSymptoms.length) * 100
       : 0;
 
     return {
       ...diagnosis,
-      matchedSymptoms,
+      matchedSymptoms: matchedInputSymptoms, // Input symptoms that matched
+      matchedDiagnosisSymptoms, // Diagnosis symptoms that matched
       matchCount,
       matchPercentage: Math.round(matchPercentage * 100) / 100,
       allSymptoms: diagnosisSymptoms
     };
-  })
-  .filter(d => d.matchCount > 0) // Only return diagnoses with at least one match
-  .sort((a, b) => b.matchCount - a.matchCount || b.matchPercentage - a.matchPercentage); // Sort by match count/percentage
+  });
 
-  return matchedDiagnoses;
+  // Sort: first by match count (desc), then by match percentage (desc), then by creation date (desc)
+  matchedDiagnoses.sort((a, b) => {
+    if (b.matchCount !== a.matchCount) {
+      return b.matchCount - a.matchCount;
+    }
+    if (b.matchPercentage !== a.matchPercentage) {
+      return b.matchPercentage - a.matchPercentage;
+    }
+    return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+  });
+
+  return {
+    diagnoses: matchedDiagnoses,
+    pagination: {
+      currentPage: parseInt(page, 10),
+      totalPages: Math.ceil(total / parseInt(limit, 10)) || 1,
+      totalItems: total,
+      itemsPerPage: parseInt(limit, 10),
+      hasNextPage: skip + parseInt(limit, 10) < total,
+      hasPrevPage: parseInt(page, 10) > 1
+    }
+  };
 }
 
 /**

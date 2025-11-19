@@ -45,7 +45,7 @@ const DEFAULT_SUGGESTIONS = [
 ];
 
 export default function TriageLeftPanel({ patientId, onSave }) {
-  const { matchDiagnoses, loading } = useTriage();
+  const { matchDiagnoses, loading, matchPagination } = useTriage();
   const { loadSymptoms, symptoms: suggestionList } = useDiagnosis();
   const [symptoms, setSymptoms] = useState([]);
   const [symptomInput, setSymptomInput] = useState('');
@@ -55,6 +55,14 @@ export default function TriageLeftPanel({ patientId, onSave }) {
   const [severityLevel, setSeverityLevel] = useState('');
   const [systemFilters, setSystemFilters] = useState({ dsm5: true, icd10: true });
   const [notes, setNotes] = useState('');
+  const [diagnosisLimit, setDiagnosisLimit] = useState(2);
+
+  // Sync limit with pagination when it changes
+  useEffect(() => {
+    if (matchPagination?.itemsPerPage) {
+      setDiagnosisLimit(matchPagination.itemsPerPage);
+    }
+  }, [matchPagination?.itemsPerPage]);
 
   // Load symptoms on mount
   useEffect(() => {
@@ -70,17 +78,23 @@ export default function TriageLeftPanel({ patientId, onSave }) {
     return Array.from(new Set([...backend, ...fallback]));
   }, [suggestionList]);
 
-  // Auto-match diagnoses when symptoms change
+  // Auto-match diagnoses when symptoms or system filters change
+  // Preloads diagnoses on mount (show all with limit 2) and matches when symptoms are entered
   useEffect(() => {
+    const system = systemFilters.dsm5 && systemFilters.icd10 
+      ? null 
+      : systemFilters.dsm5 
+      ? 'DSM-5' 
+      : 'ICD-10';
+    
     if (symptoms.length > 0) {
-      const system = systemFilters.dsm5 && systemFilters.icd10 
-        ? null 
-        : systemFilters.dsm5 
-        ? 'DSM-5' 
-        : 'ICD-10';
-      matchDiagnoses(symptoms, system);
+      // Match with symptoms (use diagnosisLimit)
+      matchDiagnoses(symptoms, system, { page: 1, limit: diagnosisLimit });
+    } else {
+      // Show all if no symptoms (use diagnosisLimit)
+      matchDiagnoses([], system, { page: 1, limit: diagnosisLimit, showAll: true });
     }
-  }, [symptoms, systemFilters.dsm5, systemFilters.icd10]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [symptoms, systemFilters.dsm5, systemFilters.icd10, diagnosisLimit]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSymptomsChange = useCallback((e, newValue) => {
     // Normalize all symptoms (convert spaces to underscores, lowercase)
@@ -146,6 +160,33 @@ export default function TriageLeftPanel({ patientId, onSave }) {
             Enter symptoms, duration, and course. Saving to: {patientId?.slice(-8) || 'N/A'}
           </Typography>
         </Box>
+
+        {/* Diagnosis Results Limit Selector */}
+{/*         <Box>
+          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem', display: 'block', mb: 0.75 }}>
+            Results per page:
+          </Typography>
+          <Stack direction="row" spacing={0.5} flexWrap="wrap">
+            {[2, 5, 10, 20, 50].map((option) => (
+              <Button
+                key={option}
+                variant={diagnosisLimit === option ? 'contained' : 'outlined'}
+                size="small"
+                onClick={() => setDiagnosisLimit(option)}
+                sx={{
+                  fontSize: '0.7rem',
+                  px: 1,
+                  py: 0.25,
+                  minHeight: 24,
+                  minWidth: 40,
+                  textTransform: 'none'
+                }}
+              >
+                {option}
+              </Button>
+            ))}
+          </Stack>
+        </Box> */}
 
         {/* Symptoms */}
         <Box>
