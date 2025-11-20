@@ -106,24 +106,62 @@ export async function matchDiagnoses(symptoms = [], systemFilter = null, user = 
     }
   }
 
-  // Get accessible diagnoses (global, organization, or personal)
-  const accessibleFilter = {
-    $or: [
-      { type: 'global' },
-      ...(user?.organization ? [{ type: 'organization', organization: user.organization }] : []),
-      { type: 'personal', createdBy: user?._id || user?.id }
-    ]
-  };
+  // Build access control filter based on user role and organization
+  let accessibleFilter = {};
+  if (user) {
+    // Super admin can see all diagnoses
+    if (user.role === 'super_admin') {
+      // No filter needed - show all
+      accessibleFilter = {};
+    }
+    // User with organization: can see global, organization (same org), and personal (their own)
+    else if (user.organization) {
+      accessibleFilter = {
+        $or: [
+          { type: 'global' },
+          { 
+            $and: [
+              { type: 'organization' },
+              { organization: user.organization }
+            ]
+          },
+          {
+            $and: [
+              { type: 'personal' },
+              { createdBy: user._id || user.id }
+            ]
+          }
+        ]
+      };
+    }
+    // Individual user (no organization): can see global and their personal diagnoses
+    else {
+      accessibleFilter = {
+        $or: [
+          { type: 'global' },
+          {
+            $and: [
+              { type: 'personal' },
+              { createdBy: user._id || user.id }
+            ]
+          }
+        ]
+      };
+    }
+  }
 
   // Build base filter
-  const filterParts = [accessibleFilter];
+  const filterParts = [];
+  // Only add accessibleFilter if it has conditions (not empty for super_admin)
+  if (Object.keys(accessibleFilter).length > 0) {
+    filterParts.push(accessibleFilter);
+  }
   if (Object.keys(systemFilterObj).length > 0) {
     filterParts.push(systemFilterObj);
   }
 
   // If we have symptoms and want to filter, add symptom filter
   // Otherwise, if showAll is true, we'll fetch all and calculate matches
-  let finalFilter = { $and: filterParts };
   let shouldFilterBySymptoms = normalizedSymptoms.length > 0 && !showAll;
 
   if (shouldFilterBySymptoms) {
@@ -140,8 +178,14 @@ export async function matchDiagnoses(symptoms = [], systemFilter = null, user = 
       })
     };
     filterParts.push(symptomFilter);
-    finalFilter = { $and: filterParts };
   }
+
+  // Build final filter - use $and only if we have multiple parts, otherwise use the single filter
+  let finalFilter = filterParts.length === 0 
+    ? {} 
+    : filterParts.length === 1 
+      ? filterParts[0] 
+      : { $and: filterParts };
 
   // Calculate pagination
   const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10);

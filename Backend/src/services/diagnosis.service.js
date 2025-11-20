@@ -22,7 +22,7 @@ async function upsertSymptoms(symptoms) {
   }
 }
 
-export async function getAllDiagnoses(queryParams = {}) {
+export async function getAllDiagnoses(queryParams = {}, user = null) {
   const {
     page = 1,
     limit = 10,
@@ -35,6 +35,48 @@ export async function getAllDiagnoses(queryParams = {}) {
 
   // Build filter object using composable $and clauses to support combining search + system
   const andClauses = [];
+  
+  // Apply user-based access control
+  if (user) {
+    // Super admin can see all diagnoses
+    if (user.role === 'super_admin') {
+      // No additional filter needed - show all
+    } 
+    // User with organization: can see global, organization (same org), and personal (their own)
+    else if (user.organization) {
+      andClauses.push({
+        $or: [
+          { type: 'global' },
+          { 
+            $and: [
+              { type: 'organization' },
+              { organization: user.organization }
+            ]
+          },
+          {
+            $and: [
+              { type: 'personal' },
+              { createdBy: user._id || user.id }
+            ]
+          }
+        ]
+      });
+    }
+    // Individual user (no organization): can see global and their personal diagnoses
+    else {
+      andClauses.push({
+        $or: [
+          { type: 'global' },
+          {
+            $and: [
+              { type: 'personal' },
+              { createdBy: user._id || user.id }
+            ]
+          }
+        ]
+      });
+    }
+  }
   
   if (search) {
     const regex = { $regex: search, $options: 'i' };

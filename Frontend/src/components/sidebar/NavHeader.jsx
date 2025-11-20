@@ -19,7 +19,8 @@ import {
   AccountCircle,
   Logout,
   Person,
-  KeyboardArrowDown
+  KeyboardArrowDown,
+  BusinessOutlined
 } from '@mui/icons-material';
 
 const NavHeader = ({ onLogout, onOpenProfile, user }) => {
@@ -119,6 +120,23 @@ const NavHeader = ({ onLogout, onOpenProfile, user }) => {
                 <Typography variant="caption" sx={{ color: 'text.secondary', lineHeight: 1.2 }}>
                   {user?.email || 'user@example.com'}
                 </Typography>
+                {user?.organization?.name && (
+                  <Typography 
+                    variant="caption" 
+                    sx={{ 
+                      color: 'text.secondary', 
+                      lineHeight: 1.2,
+                      fontSize: '0.65rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.5,
+                      mt: 0.25
+                    }}
+                  >
+                    <BusinessOutlined sx={{ fontSize: 12 }} />
+                    {user.organization.name}
+                  </Typography>
+                )}
               </Box>
             )}
             <KeyboardArrowDown sx={{ fontSize: 16, color: 'text.secondary' }} />
@@ -179,6 +197,22 @@ const NavHeader = ({ onLogout, onOpenProfile, user }) => {
                   <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                     {user?.email || 'user@example.com'}
                   </Typography>
+                  {user?.organization?.name && (
+                    <Typography 
+                      variant="caption" 
+                      sx={{ 
+                        color: 'text.secondary',
+                        fontSize: '0.7rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                        mt: 0.25
+                      }}
+                    >
+                      <BusinessOutlined sx={{ fontSize: 12 }} />
+                      {user.organization.name}
+                    </Typography>
+                  )}
                 </Box>
               </Stack>
             </Box>

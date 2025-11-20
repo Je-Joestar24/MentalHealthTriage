@@ -1,12 +1,15 @@
 import React from 'react';
-import { Container, Box, Typography, Stack, Divider, Card, Grid } from '@mui/material';
+import { Container, Box, Typography, Stack, Divider, Card, Grid, Chip } from '@mui/material';
 import { motion } from 'framer-motion';
 import usePsychologistDashboard from '../../hooks/psychologistDashboardHook';
 import DashboardCounts from '../../components/psychologist/dashboard/DashboardCounts';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
+import useUser from '../../hooks/userHook';
 
 export default function PsychologistDashboard() {
     const { stats, loading, error, refetch } = usePsychologistDashboard();
+    const { user } = useUser();
 
     return (
         <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -36,16 +39,32 @@ export default function PsychologistDashboard() {
                 >
                     Dashboard Overview
                 </Typography>
-                <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{
-                        fontSize: '0.8rem',
-                        opacity: 0.8,
-                    }}
-                >
-                    Your practice statistics and activity summary
-                </Typography>
+                <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{
+                            fontSize: '0.8rem',
+                            opacity: 0.8,
+                        }}
+                    >
+                        Your practice statistics and activity summary
+                    </Typography>
+                    {user?.organization?.name && (
+                        <Chip
+                            icon={<BusinessOutlinedIcon sx={{ fontSize: 14 }} />}
+                            label={user.organization.name}
+                            size="small"
+                            variant="outlined"
+                            sx={{
+                                fontSize: '0.75rem',
+                                height: 24,
+                                borderColor: 'divider',
+                                color: 'text.secondary',
+                            }}
+                        />
+                    )}
+                </Stack>
             </Stack>
 
             {error && (

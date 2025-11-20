@@ -2,7 +2,7 @@ import * as diagnosisService from '../services/diagnosis.service.js';
 import asyncWrapper from '../middleware/async.wrapper.js';
 
 export const getAllDiagnoses = asyncWrapper(async (req, res) => {
-  const result = await diagnosisService.getAllDiagnoses(req.query);
+  const result = await diagnosisService.getAllDiagnoses(req.query, req.user);
   res.json({
     success: true,
     data: result.diagnoses,
