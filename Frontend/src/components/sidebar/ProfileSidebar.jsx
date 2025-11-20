@@ -20,6 +20,7 @@ import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import LogoutIcon from '@mui/icons-material/Logout';
 import TodayOutlinedIcon from '@mui/icons-material/TodayOutlined';
+import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
 import useProfile from '../../hooks/profileHooks';
 
 const drawerWidth = 360;
@@ -183,7 +184,7 @@ const ProfileSidebar = ({ open, onClose, onLogout }) => {
                             </Typography>
                         </Box>
                     </Stack>
-                    <Stack direction="row" spacing={1} sx={{ mt: 1 }} alignItems="center">
+                    <Stack direction="row" spacing={1} sx={{ mt: 1 }} alignItems="center" flexWrap="wrap">
                         <Chip
                             label={user?.role?.replace('_', ' ') || 'Role'}
                             size="small"
@@ -191,6 +192,20 @@ const ProfileSidebar = ({ open, onClose, onLogout }) => {
                             variant="outlined"
                             sx={{ textTransform: 'capitalize' }}
                         />
+                        {user?.organization?.name && (
+                            <Chip
+                                icon={<BusinessOutlinedIcon sx={{ fontSize: 14 }} />}
+                                label={user.organization.name}
+                                size="small"
+                                variant="outlined"
+                                sx={{
+                                    fontSize: '0.7rem',
+                                    height: 22,
+                                    borderColor: 'divider',
+                                    color: 'text.secondary',
+                                }}
+                            />
+                        )}
                         {joinedDate && (
                             <Stack direction="row" spacing={0.5} alignItems="center">
                                 <TodayOutlinedIcon sx={{ fontSize: 16, color: 'text.secondary' }} />

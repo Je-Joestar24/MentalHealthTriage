@@ -16,7 +16,8 @@ export async function login(req, res, next) {
             return res.status(400).json({ error: 'Email and password are required.' });
         }
 
-        const user = await User.findOne({ email: email.toLowerCase().trim(), isActive: true });
+        const user = await User.findOne({ email: email.toLowerCase().trim(), isActive: true })
+            .populate('organization', 'name');
         if (!user) return res.status(401).json({ error: 'Invalid credentials' });
 
         const isMatch = await user.comparePassword(password);
@@ -145,6 +146,9 @@ export async function updateProfile(req, res, next) {
         }
 
         await user.save();
+        
+        // Populate organization before returning
+        await user.populate('organization', 'name');
 
         return res.json({
             success: true,
