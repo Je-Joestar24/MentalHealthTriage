@@ -13,6 +13,7 @@ import individualRouter from './routes/individual.routes.js';
 import dashboardRouter, { psychologistDashboardRouter } from './routes/dashboard.routes.js';
 import patientsRouter from './routes/patients.routes.js';
 import triageRouter from './routes/triage.routes.js';
+import companyDetailsRouter from './routes/companydetails.routes.js';
 import { errorHandler } from './middleware/error.handler.js';
 
 const app = express();
@@ -53,6 +54,7 @@ app.use('/api/admin/dashboard', dashboardRouter);
 app.use('/api/psychologist/dashboard', psychologistDashboardRouter);
 app.use('/api/psychologist/patients', patientsRouter);
 app.use('/api/psychologist/triage', triageRouter);
+app.use('/api/company', companyDetailsRouter);
 
 // health check
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
