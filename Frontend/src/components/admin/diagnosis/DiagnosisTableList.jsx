@@ -119,7 +119,9 @@ const DiagnosisTableList = ({ rows = [], loading, onEdit, onDelete }) => {
                         </TableCell>
                         <TableCell align="right">
                           <Stack direction="row" spacing={1} justifyContent="flex-end">
-                            {(user?.role == 'super_admin' || (user?.role == 'psychologist' && row.type == 'personal' && user?.id == row?.createdBy?._id)) && (<><Tooltip title="Edit" arrow>
+                            {(user?.role == 'super_admin' || 
+                              (user?.role == 'psychologist' && row.type == 'personal' && user?.id == row?.createdBy?._id) ||
+                              (user?.role == 'company_admin' && row.type == 'organization')) && (<><Tooltip title="Edit" arrow>
                               <IconButton onClick={() => onEdit?.(row)}>
                                 <EditOutlinedIcon />
                               </IconButton>

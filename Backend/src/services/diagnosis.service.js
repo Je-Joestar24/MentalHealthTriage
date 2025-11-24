@@ -1,6 +1,7 @@
 import Diagnosis from '../models/Diagnosis.js';
 import mongoose from 'mongoose';
 import Symptom from '../models/Symptoms.js';
+import User from '../models/User.js';
 
 // Utility: converts snake_case (or kebab-case) to pretty form (Depressed mood)
 function toPrettySymptom(raw) {
@@ -42,25 +43,71 @@ export async function getAllDiagnoses(queryParams = {}, user = null) {
     if (user.role === 'super_admin') {
       // No additional filter needed - show all
     } 
-    // User with organization: can see global, organization (same org), and personal (their own)
+    // User with organization
     else if (user.organization) {
-      andClauses.push({
-        $or: [
-          { type: 'global' },
-          { 
+      const userId = user._id || user.id;
+      const userOrgId = user.organization._id || user.organization;
+      
+      // Build the $or conditions
+      const orConditions = [
+        { type: 'global' }
+      ];
+      
+      // For organization-type diagnoses:
+      // - company_admin: check if createdBy matches their ID (only one company_admin per org)
+      // - psychologist: check if createdBy (company_admin) belongs to the same organization
+      if (user.role === 'company_admin') {
+        // Company admin can see organization-type diagnoses they created
+        orConditions.push({
+          $and: [
+            { type: 'organization' },
+            { createdBy: userId }
+          ]
+        });
+        
+        // Get all psychologist IDs in the organization for personal diagnoses
+        const psychologists = await User.find({
+          organization: userOrgId,
+          role: 'psychologist',
+          isActive: true
+        }).select('_id').lean();
+        
+        const psychologistIds = psychologists.map(p => p._id);
+        
+        // Add condition to see all personal diagnoses from organization psychologists
+        orConditions.push({
+          $and: [
+            { type: 'personal' },
+            { createdBy: { $in: psychologistIds } }
+          ]
+        });
+      } else {
+        // For psychologist: check if organization-type diagnosis was created by their org's company_admin
+        const companyAdmin = await User.findOne({
+          organization: userOrgId,
+          role: 'company_admin',
+          isActive: true
+        }).select('_id').lean();
+        
+        if (companyAdmin) {
+          orConditions.push({
             $and: [
               { type: 'organization' },
-              { organization: user.organization }
+              { createdBy: companyAdmin._id }
             ]
-          },
-          {
-            $and: [
-              { type: 'personal' },
-              { createdBy: user._id || user.id }
-            ]
-          }
-        ]
-      });
+          });
+        }
+        
+        // Psychologist can only see their own personal diagnoses
+        orConditions.push({
+          $and: [
+            { type: 'personal' },
+            { createdBy: userId }
+          ]
+        });
+      }
+      
+      andClauses.push({ $or: orConditions });
     }
     // Individual user (no organization): can see global and their personal diagnoses
     else {
@@ -167,9 +214,38 @@ export async function createDiagnosis(diagnosisData) {
   return diagnosis;
 }
 
-export async function updateDiagnosis(id, updateData) {
+export async function updateDiagnosis(id, updateData, user = null) {
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw new Error('Invalid diagnosis ID');
+  }
+
+  // Check if diagnosis exists and user has permission to edit
+  const diagnosis = await Diagnosis.findById(id);
+  if (!diagnosis) {
+    throw new Error('Diagnosis not found');
+  }
+
+  // Permission check: user can edit if:
+  // 1. Super admin can edit any
+  // 2. User created the diagnosis (createdBy matches)
+  // 3. Company admin can edit organization-type diagnoses from their organization
+  if (user) {
+    const userId = user._id || user.id;
+    const userOrgId = user.organization?._id || user.organization;
+    
+    if (user.role !== 'super_admin') {
+      const isCreator = diagnosis.createdBy.toString() === userId.toString();
+      const isOrgAdminWithOrgDiagnosis = 
+        user.role === 'company_admin' && 
+        userOrgId &&
+        diagnosis.type === 'organization' &&
+        diagnosis.organization &&
+        diagnosis.organization.toString() === userOrgId.toString();
+      
+      if (!isCreator && !isOrgAdminWithOrgDiagnosis) {
+        throw new Error('You do not have permission to edit this diagnosis');
+      }
+    }
   }
 
   // Prevent updating immutable fields
@@ -178,6 +254,7 @@ export async function updateDiagnosis(id, updateData) {
   delete updateData.code;
   delete updateData.type;
   delete updateData.createdBy;
+  delete updateData.organization; // Don't allow changing organization
 
   // Normalize potential CSV-style keys to new fields
   if (typeof updateData.dsm5_code === 'string' && !updateData.dsm5Code) {
@@ -189,17 +266,14 @@ export async function updateDiagnosis(id, updateData) {
     delete updateData.icd10_code;
   }
 
-  const diagnosis = await Diagnosis.findByIdAndUpdate(
+  const updatedDiagnosis = await Diagnosis.findByIdAndUpdate(
     id,
     { $set: updateData },
     { new: true, runValidators: true }
   );
   await upsertSymptoms(updateData.symptoms);
-  if (!diagnosis) {
-    throw new Error('Diagnosis not found');
-  }
-
-  return diagnosis;
+  
+  return updatedDiagnosis;
 }
 
 export async function deleteDiagnosis(id) {
