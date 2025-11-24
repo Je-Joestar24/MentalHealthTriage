@@ -1,4 +1,4 @@
 
 export default function OrgAdminDashboard(){
-    return (<>Org Admin Dashboard</>)
+    return (<>Company Admin Dashboard</>)
 }

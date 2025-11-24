@@ -62,11 +62,11 @@ const Sidebar = ({ mobileOpen, onMobileClose }) => {
   const { user } = useUser()
 
   const organizationNavItems = [
-    { to: "/compay/dashboard", icon: SpaceDashboardOutlinedIcon, label: "Dashboard" },
-    { to: "/compay/details", icon: InfoOutlinedIcon, label: "Company Details" },
-    { to: "/compay/diagnosis/list", icon: MedicalInformationOutlinedIcon, label: "Diagnosis List" },
-    { to: "/compay/psychologist/list", icon: PsychologyAltOutlinedIcon, label: "Psychologists List" },
-    { to: "/compay/patients", icon: GroupsOutlinedIcon, label: "Patients" },
+    { to: "/company/dashboard", icon: SpaceDashboardOutlinedIcon, label: "Dashboard" },
+    { to: "/company/details", icon: InfoOutlinedIcon, label: "Company Details" },
+    { to: "/company/diagnosis/list", icon: MedicalInformationOutlinedIcon, label: "Diagnosis List" },
+    { to: "/company/psychologist/list", icon: PsychologyAltOutlinedIcon, label: "Psychologists List" },
+    { to: "/company/patients", icon: GroupsOutlinedIcon, label: "Patients" },
   ];
 
   

@@ -9,7 +9,7 @@ import AdminDashboard from "../pages/Admin/AdminDashboard";
 import RequireGuest from "./access/RequireGuest";
 import RequireAuth from "./access/RequireAuth";
 import PsychologistDashboard from "../pages/Psychologist/PsychologistDashboard";
-import OrgAdminDashboard from "../pages/OrgAdminDashboard";
+import OrgAdminDashboard from "../pages/OrgAdmin/OrgAdminDashboard";
 import Organizations from "../pages/Admin/Organizations";
 import DiagnosisList from "../pages/Admin/DiagnosisList";
 import IndividualAccounts from "../pages/Admin/IndividualAccounts";
@@ -17,6 +17,10 @@ import TriagePatient from "../pages/Psychologist/TriagePatient";
 import PatientsList from "../pages/Psychologist/PatientsList";
 import PsychologistDiagnosisList from "../pages/Psychologist/PsychologistDiagnosisList";
 import PatientsTriageHistory from "../pages/Psychologist/PatientsTriageHistory";
+import CompanyDetails from "../pages/OrgAdmin/CompanyDetails";
+import CompanyDiagnosisLIst from "../pages/OrgAdmin/CompanyDiagnosisList";
+import CompanyPsychologistList from "../pages/OrgAdmin/CompanyPsychologistList";
+import CompanyPatients from "../pages/OrgAdmin/CompanyPatients";
 
 const router = createBrowserRouter([
     {
@@ -101,6 +105,34 @@ const router = createBrowserRouter([
                         path: "dashboard", element: (
                             <RequireAuth roles={["company_admin"]}>
                                 <OrgAdminDashboard />
+                            </RequireAuth>
+                        )
+                    },
+                    {
+                        path: "details", element: (
+                            <RequireAuth roles={["company_admin"]}>
+                                <CompanyDetails />
+                            </RequireAuth>
+                        )
+                    },
+                    {
+                        path: "diagnosis/list", element: (
+                            <RequireAuth roles={["company_admin"]}>
+                                <CompanyDiagnosisLIst />
+                            </RequireAuth>
+                        )
+                    },
+                    {
+                        path: "psychologist/list", element: (
+                            <RequireAuth roles={["company_admin"]}>
+                                <CompanyPsychologistList />
+                            </RequireAuth>
+                        )
+                    },
+                    {
+                        path: "patients", element: (
+                            <RequireAuth roles={["company_admin"]}>
+                                <CompanyPatients />
                             </RequireAuth>
                         )
                     },
