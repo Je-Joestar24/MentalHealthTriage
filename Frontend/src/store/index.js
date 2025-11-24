@@ -7,6 +7,7 @@ import individualReducer from "./individualSlice";
 import profileReducer from "./profileSlice";
 import patientsReducer from "./patientSlice";
 import triageReducer from "./triageSlice";
+import companyReducer from "./companySlice";
 
 export const store = configureStore({
     reducer: {
@@ -18,5 +19,6 @@ export const store = configureStore({
         profile: profileReducer,
         patients: patientsReducer,
         triage: triageReducer,
+        company: companyReducer,
     },
 });
