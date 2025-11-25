@@ -74,12 +74,19 @@ export async function updateProfile(req, res, next) {
             return res.status(401).json({ success: false, error: 'Authentication required' });
         }
 
-        const { name, email, current_password: currentPassword, new_password: newPassword } = req.body || {};
+        const { 
+            name, 
+            email, 
+            specialization, 
+            experience, 
+            current_password: currentPassword, 
+            new_password: newPassword 
+        } = req.body || {};
 
-        if (!name && !email && !newPassword) {
+        if (!name && !email && !newPassword && specialization === undefined && experience === undefined) {
             return res.status(400).json({
                 success: false,
-                error: 'At least one of name, email, or new password must be provided'
+                error: 'At least one field must be provided for update'
             });
         }
 
@@ -143,6 +150,23 @@ export async function updateProfile(req, res, next) {
             }
 
             user.password = newPassword;
+        }
+
+        // Update specialization if provided
+        if (specialization !== undefined) {
+            user.specialization = specialization.trim() || '';
+        }
+
+        // Update experience if provided
+        if (experience !== undefined) {
+            const experienceNum = Number(experience);
+            if (isNaN(experienceNum) || experienceNum < 0) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Experience must be a non-negative number'
+                });
+            }
+            user.experience = experienceNum;
         }
 
         await user.save();

@@ -21,6 +21,8 @@ import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import LogoutIcon from '@mui/icons-material/Logout';
 import TodayOutlinedIcon from '@mui/icons-material/TodayOutlined';
 import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
+import WorkOutlineIcon from '@mui/icons-material/WorkOutline';
+import SchoolOutlinedIcon from '@mui/icons-material/SchoolOutlined';
 import useProfile from '../../hooks/profileHooks';
 
 const drawerWidth = 360;
@@ -30,6 +32,8 @@ const ProfileSidebar = ({ open, onClose, onLogout }) => {
     const [form, setForm] = useState({
         name: '',
         email: '',
+        specialization: '',
+        experience: '',
         currentPassword: '',
         newPassword: '',
         confirmPassword: ''
@@ -43,6 +47,8 @@ const ProfileSidebar = ({ open, onClose, onLogout }) => {
                 ...prev,
                 name: user.name || '',
                 email: user.email || '',
+                specialization: user.specialization || '',
+                experience: user.experience !== undefined && user.experience !== null ? String(user.experience) : '',
                 currentPassword: '',
                 newPassword: '',
                 confirmPassword: ''
@@ -63,9 +69,13 @@ const ProfileSidebar = ({ open, onClose, onLogout }) => {
         if (!user) return false;
         const nameChanged = form.name.trim() !== (user.name || '');
         const emailChanged = form.email.trim() !== (user.email || '');
+        const specializationChanged = (form.specialization || '').trim() !== (user.specialization || '');
+        const userExperience = user.experience !== undefined && user.experience !== null ? String(user.experience) : '';
+        const formExperience = form.experience || '';
+        const experienceChanged = formExperience !== userExperience;
         const passwordChanged =
             form.currentPassword || form.newPassword || form.confirmPassword;
-        return nameChanged || emailChanged || !!passwordChanged;
+        return nameChanged || emailChanged || specializationChanged || experienceChanged || !!passwordChanged;
     }, [form, user]);
 
     const validate = () => {
@@ -78,6 +88,14 @@ const ProfileSidebar = ({ open, onClose, onLogout }) => {
             nextErrors.email = 'Email is required';
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
             nextErrors.email = 'Enter a valid email address';
+        }
+
+        // Validate experience if provided
+        if (form.experience !== '' && form.experience !== null && form.experience !== undefined) {
+            const experienceNum = Number(form.experience);
+            if (isNaN(experienceNum) || experienceNum < 0) {
+                nextErrors.experience = 'Experience must be a non-negative number';
+            }
         }
 
         if (showPassword || form.newPassword || form.currentPassword || form.confirmPassword) {
@@ -107,6 +125,19 @@ const ProfileSidebar = ({ open, onClose, onLogout }) => {
             name: form.name.trim(),
             email: form.email.trim()
         };
+
+        // Add specialization if provided or if it's being cleared
+        if (form.specialization !== undefined) {
+            payload.specialization = form.specialization.trim() || '';
+        }
+
+        // Add experience only if provided (not empty)
+        if (form.experience !== '' && form.experience !== null && form.experience !== undefined) {
+            payload.experience = Number(form.experience);
+        } else if (form.experience === '') {
+            // Explicitly set to 0 if cleared
+            payload.experience = 0;
+        }
 
         const userId = user?.id || user?._id;
         if (userId) {
@@ -182,6 +213,20 @@ const ProfileSidebar = ({ open, onClose, onLogout }) => {
                             <Typography variant="body2" color="text.secondary">
                                 {user?.email || 'user@example.com'}
                             </Typography>
+                            {(user?.role === 'psychologist' || user?.role === 'company_admin') && (
+                                <Stack direction="row" spacing={1} sx={{ mt: 0.5 }} flexWrap="wrap">
+                                    {user?.specialization && (
+                                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                                            {user.specialization}
+                                        </Typography>
+                                    )}
+                                    {user?.experience !== undefined && user?.experience !== null && user?.experience !== '' && (
+                                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                                            {user.experience} {user.experience === 1 ? 'year' : 'years'} exp.
+                                        </Typography>
+                                    )}
+                                </Stack>
+                            )}
                         </Box>
                     </Stack>
                     <Stack direction="row" spacing={1} sx={{ mt: 1 }} alignItems="center" flexWrap="wrap">
@@ -258,6 +303,43 @@ const ProfileSidebar = ({ open, onClose, onLogout }) => {
                                 )
                             }}
                         />
+                        {(user?.role === 'psychologist' || user?.role === 'company_admin') && (
+                            <>
+                                <TextField
+                                    label="Specialization"
+                                    value={form.specialization}
+                                    onChange={(e) => handleChange('specialization', e.target.value)}
+                                    size="small"
+                                    fullWidth
+                                    placeholder="e.g., Clinical Psychology"
+                                    InputProps={{
+                                        startAdornment: (
+                                            <InputAdornment position="start">
+                                                <SchoolOutlinedIcon sx={{ fontSize: 18, color: 'text.disabled' }} />
+                                            </InputAdornment>
+                                        )
+                                    }}
+                                />
+                                <TextField
+                                    label="Experience (Years)"
+                                    type="number"
+                                    value={form.experience}
+                                    onChange={(e) => handleChange('experience', e.target.value)}
+                                    size="small"
+                                    fullWidth
+                                    error={!!errors.experience}
+                                    helperText={errors.experience || 'Years of professional experience'}
+                                    inputProps={{ min: 0, step: 1 }}
+                                    InputProps={{
+                                        startAdornment: (
+                                            <InputAdornment position="start">
+                                                <WorkOutlineIcon sx={{ fontSize: 18, color: 'text.disabled' }} />
+                                            </InputAdornment>
+                                        )
+                                    }}
+                                />
+                            </>
+                        )}
                     </Stack>
 
                     <Divider />
