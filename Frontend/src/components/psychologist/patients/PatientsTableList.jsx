@@ -23,6 +23,7 @@ import HistoryEduOutlinedIcon from '@mui/icons-material/HistoryEduOutlined';
 import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import { useNavigate } from 'react-router-dom';
+import useUser from '../../../hooks/userHook';
 
 const formatDate = (value) => {
   if (!value) return '—';
@@ -76,6 +77,8 @@ const PatientsTableList = ({
   onDelete,
   onRestore
 }) => {
+
+  const user = useUser();
 
   const navigate = useNavigate();
   const handleStartTriage = (id) => {
@@ -149,7 +152,7 @@ const PatientsTableList = ({
                   </TableCell>
                   <TableCell align="right">
                     <Stack direction="row" spacing={1} justifyContent="flex-end">
-                      <Tooltip title="Start Triage">
+                      {user?.user?.role === 'psychologist' && (<Tooltip title="Start Triage">
                         <span>
                           <Button
                             size="small"
@@ -161,7 +164,7 @@ const PatientsTableList = ({
                             Triage
                           </Button>
                         </span>
-                      </Tooltip>
+                      </Tooltip>)}
                       <Tooltip title="View Triage History">
                         <span>
                           <IconButton size="small" onClick={() => onViewTriage?.(row)}>
@@ -169,7 +172,7 @@ const PatientsTableList = ({
                           </IconButton>
                         </span>
                       </Tooltip>
-                      {row.isDeleted ? (
+                      {user?.user?.role === 'psychologist' && (<>{row.isDeleted ? (
                         <Tooltip title="Restore patient">
                           <span>
                             <IconButton size="small" onClick={() => onRestore?.(row)}>
@@ -194,7 +197,7 @@ const PatientsTableList = ({
                             </span>
                           </Tooltip>
                         </>
-                      )}
+                      )}</>)}
                     </Stack>
                   </TableCell>
                 </TableRow>

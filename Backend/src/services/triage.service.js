@@ -306,7 +306,7 @@ export async function matchDiagnoses(symptoms = [], systemFilter = null, user = 
 /**
  * Get all triage records for a patient with pagination, search, and sorting
  */
-export async function getTriageRecords(patientId, psychologistId, queryParams = {}) {
+export async function getTriageRecords(patientId, user, queryParams = {}) {
   const {
     page = 1,
     limit = 10,
@@ -315,11 +315,28 @@ export async function getTriageRecords(patientId, psychologistId, queryParams = 
     sortOrder = 'desc'
   } = queryParams;
 
-  // Verify patient belongs to psychologist
-  const patient = await Patient.findOne({
-    _id: patientId,
-    assignedPsychologist: psychologistId
-  });
+  // Get organization ID (handle both ObjectId and populated object)
+  const organizationId = user.organization?._id || user.organization;
+  const userId = user._id || user.id;
+
+  // Verify patient access based on user role
+  let patient;
+  if (user.role === 'company_admin') {
+    // Company admin: verify patient belongs to their organization
+    if (!organizationId) {
+      throw new Error('Company admin must belong to an organization');
+    }
+    patient = await Patient.findOne({
+      _id: patientId,
+      organization: organizationId
+    });
+  } else {
+    // Psychologist: verify patient is assigned to them
+    patient = await Patient.findOne({
+      _id: patientId,
+      assignedPsychologist: userId
+    });
+  }
 
   if (!patient) {
     throw new Error('Patient not found or access denied');
@@ -327,9 +344,17 @@ export async function getTriageRecords(patientId, psychologistId, queryParams = 
 
   // Build base filter
   const filter = {
-    patient: patientId,
-    psychologist: psychologistId
+    patient: patientId
   };
+
+  // For psychologist: filter by their triages only
+  // For company_admin: show all triages for patients in their organization
+  if (user.role === 'psychologist') {
+    filter.psychologist = userId;
+  } else if (user.role === 'company_admin') {
+    // Company admin can see all triages for patients in their organization
+    // No need to filter by psychologist - show all triages for the patient
+  }
 
   // Add search filter if provided
   if (search) {

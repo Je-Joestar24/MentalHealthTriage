@@ -20,12 +20,24 @@ export const getPatients = async (queryParams = {}, user) => {
     sortOrder = 'desc'
   } = queryParams;
 
-  const filter = {
-    assignedPsychologist: user._id
-  };
+  const filter = {};
 
-  if (user.organization) {
-    filter.organization = user.organization;
+  // Get organization ID (handle both ObjectId and populated object)
+  const organizationId = user.organization?._id || user.organization;
+
+  // For company_admin: show all patients in their organization
+  // For psychologist: show only patients assigned to them
+  if (user.role === 'company_admin') {
+    if (!organizationId) {
+      throw new Error('Company admin must belong to an organization');
+    }
+    filter.organization = organizationId;
+  } else {
+    // Psychologist: filter by assigned psychologist
+    filter.assignedPsychologist = user._id;
+    if (organizationId) {
+      filter.organization = organizationId;
+    }
   }
 
   if (includeDeleted === 'false') {
@@ -80,6 +92,11 @@ export const getPatients = async (queryParams = {}, user) => {
 };
 
 export const createPatient = async (payload, user) => {
+  // Only psychologists can create patients
+  if (user.role !== 'psychologist') {
+    throw new Error('Only psychologists can create patients');
+  }
+
   const {
     name,
     age,
@@ -112,6 +129,11 @@ export const createPatient = async (payload, user) => {
 };
 
 export const updatePatient = async (patientId, updateData, user) => {
+  // Only psychologists can update patients
+  if (user.role !== 'psychologist') {
+    throw new Error('Only psychologists can update patients');
+  }
+
   const patient = await Patient.findOne({
     _id: patientId,
     assignedPsychologist: user._id,
@@ -140,6 +162,11 @@ export const updatePatient = async (patientId, updateData, user) => {
 };
 
 export const softDeletePatient = async (patientId, user) => {
+  // Only psychologists can delete patients
+  if (user.role !== 'psychologist') {
+    throw new Error('Only psychologists can delete patients');
+  }
+
   const patient = await Patient.findOneAndUpdate(
     { _id: patientId, assignedPsychologist: user._id, isDeleted: false },
     { isDeleted: true, status: 'inactive' },
@@ -157,6 +184,11 @@ export const softDeletePatient = async (patientId, user) => {
 };
 
 export const restorePatient = async (patientId, user) => {
+  // Only psychologists can restore patients
+  if (user.role !== 'psychologist') {
+    throw new Error('Only psychologists can restore patients');
+  }
+
   const patient = await Patient.findOneAndUpdate(
     { _id: patientId, assignedPsychologist: user._id, isDeleted: true },
     { isDeleted: false, status: 'active' },
@@ -174,10 +206,24 @@ export const restorePatient = async (patientId, user) => {
 };
 
 export const getPatientById = async (patientId, user) => {
-  const patient = await Patient.findOne({
-    _id: patientId,
-    assignedPsychologist: user._id
-  })
+  const filter = { _id: patientId };
+
+  // Get organization ID (handle both ObjectId and populated object)
+  const organizationId = user.organization?._id || user.organization;
+
+  // For company_admin: filter by organization
+  // For psychologist: filter by assigned psychologist
+  if (user.role === 'company_admin') {
+    if (!organizationId) {
+      throw new Error('Company admin must belong to an organization');
+    }
+    filter.organization = organizationId;
+  } else {
+    // Psychologist: filter by assigned psychologist
+    filter.assignedPsychologist = user._id;
+  }
+
+  const patient = await Patient.findOne(filter)
     .populate('assignedPsychologist', 'name email role')
     .populate('organization', 'name')
     .populate({

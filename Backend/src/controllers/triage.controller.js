@@ -8,10 +8,10 @@ import asyncWrapper from '../middleware/async.wrapper.js';
  */
 export const getTriageRecords = asyncWrapper(async (req, res) => {
   const { patientId } = req.params;
-  const psychologistId = req.user._id || req.user.id;
+  const user = req.user;
   const queryParams = req.query;
 
-  const result = await triageService.getTriageRecords(patientId, psychologistId, queryParams);
+  const result = await triageService.getTriageRecords(patientId, user, queryParams);
 
   res.json({
     success: true,

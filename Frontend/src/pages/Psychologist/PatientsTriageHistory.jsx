@@ -73,7 +73,7 @@ export default function PatientsTriageHistory() {
   );
 
   const handleBack = useCallback(() => {
-    navigate('/psychologist/patients');
+    navigate(-1);
   }, [navigate]);
 
   const appliedFiltersSummary = useMemo(() => {

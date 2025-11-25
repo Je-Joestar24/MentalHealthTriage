@@ -11,7 +11,15 @@ import { authenticateToken } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
-// Middleware to ensure user is a psychologist
+// Middleware to ensure user is a psychologist or company_admin
+const requirePsychologistOrCompanyAdmin = (req, res, next) => {
+  if (!req.user || (req.user.role !== 'psychologist' && req.user.role !== 'company_admin')) {
+    return res.status(403).json({ success: false, error: 'Psychologist or company admin access required' });
+  }
+  next();
+};
+
+// Middleware to ensure user is a psychologist (for write operations)
 const requirePsychologist = (req, res, next) => {
   if (!req.user || req.user.role !== 'psychologist') {
     return res.status(403).json({ success: false, error: 'Psychologist access required' });
@@ -19,25 +27,26 @@ const requirePsychologist = (req, res, next) => {
   next();
 };
 
-// All routes require authentication and psychologist access
 router.use(authenticateToken);
-router.use(requirePsychologist);
 
 // GET /api/psychologist/triage/match-diagnoses - Match diagnoses based on symptoms
 // Query params: ?symptoms=depression,anxiety&system=DSM-5
 // Or POST with body: { symptoms: ['depression', 'anxiety'], system: 'DSM-5' }
-router.get('/match-diagnoses', matchDiagnoses);
-router.post('/match-diagnoses', matchDiagnoses);
+// Only psychologists can match diagnoses (for triaging)
+router.get('/match-diagnoses', requirePsychologist, matchDiagnoses);
+router.post('/match-diagnoses', requirePsychologist, matchDiagnoses);
 
 // GET /api/psychologist/patients/:patientId/triage - Get all triage records for a patient
 // Query params: ?page=1&limit=10&search=term&sortBy=createdAt&sortOrder=desc
-router.get('/patients/:patientId/triage', getTriageRecords);
+// Allow both psychologist and company_admin to view triage history
+router.get('/patients/:patientId/triage', requirePsychologistOrCompanyAdmin, getTriageRecords);
 
 // GET /api/psychologist/patients/:patientId/triage/:triageId - Get a single triage record
 // router.get('/patients/:patientId/triage/:triageId', getTriageById);
 
 // POST /api/psychologist/patients/:patientId/triage - Create a new triage record
-router.post('/patients/:patientId/triage', createTriage);
+// Only psychologists can create triages
+router.post('/patients/:patientId/triage', requirePsychologist, createTriage);
 
 // PUT /api/psychologist/patients/:patientId/triage/:triageId - Update a triage record
 // router.put('/patients/:patientId/triage/:triageId', updateTriage);
