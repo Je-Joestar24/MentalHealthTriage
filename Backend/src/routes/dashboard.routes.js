@@ -1,5 +1,5 @@
 import express from 'express';
-import { getDashboardStats, getPsychologistDashboardStats } from '../controllers/dashboard.controller.js';
+import { getDashboardStats, getPsychologistDashboardStats, getCompanyAdminDashboardStats } from '../controllers/dashboard.controller.js';
 import { authenticateToken, requireSuperAdmin } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
@@ -32,4 +32,24 @@ psychologistDashboardRouter.use(requirePsychologist);
 psychologistDashboardRouter.get('/stats', getPsychologistDashboardStats);
 
 export { psychologistDashboardRouter };
+
+// Company admin dashboard router
+const companyAdminDashboardRouter = express.Router();
+
+// Middleware to ensure user is a company admin
+const requireCompanyAdmin = (req, res, next) => {
+  if (!req.user || req.user.role !== 'company_admin') {
+    return res.status(403).json({ success: false, error: 'Company admin access required' });
+  }
+  next();
+};
+
+// All company admin dashboard routes require authentication and company admin access
+companyAdminDashboardRouter.use(authenticateToken);
+companyAdminDashboardRouter.use(requireCompanyAdmin);
+
+// GET /api/company/dashboard/stats - Get company admin dashboard statistics
+companyAdminDashboardRouter.get('/stats', getCompanyAdminDashboardStats);
+
+export { companyAdminDashboardRouter };
 

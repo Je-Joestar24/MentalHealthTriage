@@ -30,3 +30,18 @@ export const getPsychologistDashboardStats = asyncWrapper(async (req, res) => {
   });
 });
 
+/**
+ * GET /api/company/dashboard/stats
+ * Get dashboard statistics for company admin
+ * Requires company admin authentication
+ */
+export const getCompanyAdminDashboardStats = asyncWrapper(async (req, res) => {
+  const companyAdminId = req.user._id || req.user.id;
+  const stats = await dashboardService.getCompanyAdminDashboardStats(companyAdminId);
+  
+  res.json({
+    success: true,
+    data: stats
+  });
+});
+
