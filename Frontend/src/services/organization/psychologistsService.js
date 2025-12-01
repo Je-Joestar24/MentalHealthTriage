@@ -62,3 +62,76 @@ export const getPsychologists = async (params = {}) => {
   }
 };
 
+/**
+ * Create a new psychologist
+ * Organization is optional; if omitted and caller is company_admin,
+ * backend will auto-assign the psychologist to that organization.
+ *
+ * @param {{name: string, email: string, password: string, organization?: string}} payload
+ * @returns {Promise<{success: boolean, data?: Object, message?: string, error?: string}>}
+ */
+export const createPsychologist = async (payload) => {
+  try {
+    const { data } = await api.post(BASE_URL, payload);
+    return {
+      success: data.success ?? true,
+      data: data.data,
+      message: data.message || 'Psychologist created successfully'
+    };
+  } catch (error) {
+    const message = error?.response?.data?.error || error.message || 'Failed to create psychologist';
+    return {
+      success: false,
+      error: message
+    };
+  }
+};
+
+/**
+ * Update an existing psychologist (name, email, password only)
+ *
+ * @param {string} id - Psychologist ID
+ * @param {{name?: string, email?: string, password?: string}} payload
+ * @returns {Promise<{success: boolean, data?: Object, message?: string, error?: string}>}
+ */
+export const updatePsychologist = async (id, payload) => {
+  try {
+    const { data } = await api.put(`${BASE_URL}/${id}`, payload);
+    return {
+      success: data.success ?? true,
+      data: data.data,
+      message: data.message || 'Psychologist updated successfully'
+    };
+  } catch (error) {
+    const message = error?.response?.data?.error || error.message || 'Failed to update psychologist';
+    return {
+      success: false,
+      error: message
+    };
+  }
+};
+
+/**
+ * Soft delete a psychologist (sets isActive to false)
+ *
+ * @param {string} id - Psychologist ID
+ * @returns {Promise<{success: boolean, data?: Object, message?: string, error?: string}>}
+ */
+export const deletePsychologist = async (id) => {
+  try {
+    const { data } = await api.delete(`${BASE_URL}/${id}`);
+    return {
+      success: data.success ?? true,
+      data: data.data,
+      message: data.message || 'Psychologist deleted successfully'
+    };
+  } catch (error) {
+    const message = error?.response?.data?.error || error.message || 'Failed to delete psychologist';
+    return {
+      success: false,
+      error: message
+    };
+  }
+};
+
+

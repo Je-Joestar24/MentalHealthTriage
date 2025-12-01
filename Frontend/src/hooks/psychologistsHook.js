@@ -2,6 +2,9 @@ import { useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   fetchPsychologists as fetchPsychologistsThunk,
+  createPsychologist as createPsychologistThunk,
+  updatePsychologist as updatePsychologistThunk,
+  deletePsychologist as deletePsychologistThunk,
   setFilters,
   resetFilters,
   setPage,
@@ -157,6 +160,40 @@ const usePsychologists = () => {
     dispatch(clearPsychologists());
   }, [dispatch]);
 
+  /**
+   * Create a new psychologist
+   * @param {{name: string, email: string, password: string, organization?: string}} payload
+   */
+  const addPsychologist = useCallback(
+    (payload) => {
+      return dispatch(createPsychologistThunk(payload));
+    },
+    [dispatch]
+  );
+
+  /**
+   * Update an existing psychologist (name, email, password)
+   * @param {string} id - Psychologist ID
+   * @param {{name?: string, email?: string, password?: string}} payload
+   */
+  const editPsychologist = useCallback(
+    (id, payload) => {
+      return dispatch(updatePsychologistThunk({ id, payload }));
+    },
+    [dispatch]
+  );
+
+  /**
+   * Soft delete a psychologist
+   * @param {string} id - Psychologist ID
+   */
+  const removePsychologist = useCallback(
+    (id) => {
+      return dispatch(deletePsychologistThunk(id));
+    },
+    [dispatch]
+  );
+
   return {
     // State
     psychologists: psychologistsState.list,
@@ -186,7 +223,10 @@ const usePsychologists = () => {
     prevPage,
     reset,
     clear,
-    clearList
+    clearList,
+    addPsychologist,
+    editPsychologist,
+    removePsychologist
   };
 };
 

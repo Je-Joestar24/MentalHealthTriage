@@ -42,6 +42,81 @@ export const fetchPsychologists = createAsyncThunk(
   }
 );
 
+/**
+ * Create a new psychologist
+ */
+export const createPsychologist = createAsyncThunk(
+  'psychologists/createPsychologist',
+  async (payload, { rejectWithValue, dispatch }) => {
+    const result = await psychologistsService.createPsychologist(payload);
+
+    if (!result.success) {
+      dispatch(displayNotification({
+        message: result.error || 'Failed to create psychologist',
+        type: 'error'
+      }));
+      return rejectWithValue(result.error || 'Failed to create psychologist');
+    }
+
+    dispatch(displayNotification({
+      message: result.message || 'Psychologist created successfully',
+      type: 'success'
+    }));
+
+    return result.data;
+  }
+);
+
+/**
+ * Update an existing psychologist (name, email, password)
+ */
+export const updatePsychologist = createAsyncThunk(
+  'psychologists/updatePsychologist',
+  async ({ id, payload }, { rejectWithValue, dispatch }) => {
+    const result = await psychologistsService.updatePsychologist(id, payload);
+
+    if (!result.success) {
+      dispatch(displayNotification({
+        message: result.error || 'Failed to update psychologist',
+        type: 'error'
+      }));
+      return rejectWithValue(result.error || 'Failed to update psychologist');
+    }
+
+    dispatch(displayNotification({
+      message: result.message || 'Psychologist updated successfully',
+      type: 'success'
+    }));
+
+    return result.data;
+  }
+);
+
+/**
+ * Soft delete a psychologist (set isActive to false)
+ */
+export const deletePsychologist = createAsyncThunk(
+  'psychologists/deletePsychologist',
+  async (id, { rejectWithValue, dispatch }) => {
+    const result = await psychologistsService.deletePsychologist(id);
+
+    if (!result.success) {
+      dispatch(displayNotification({
+        message: result.error || 'Failed to delete psychologist',
+        type: 'error'
+      }));
+      return rejectWithValue(result.error || 'Failed to delete psychologist');
+    }
+
+    dispatch(displayNotification({
+      message: result.message || 'Psychologist deleted successfully',
+      type: 'success'
+    }));
+
+    return result.data;
+  }
+);
+
 const initialState = {
   list: [],
   pagination: {
@@ -176,6 +251,62 @@ const psychologistsSlice = createSlice({
       .addCase(fetchPsychologists.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to fetch psychologists';
+      })
+      // Create psychologist
+      .addCase(createPsychologist.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createPsychologist.fulfilled, (state, action) => {
+        state.loading = false;
+        if (action.payload) {
+          // Prepend newly created psychologist to the list
+          state.list = [action.payload, ...state.list];
+          // Update pagination total items if it exists
+          if (state.pagination) {
+            state.pagination.totalItems = (state.pagination.totalItems || 0) + 1;
+          }
+        }
+      })
+      .addCase(createPsychologist.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to create psychologist';
+      })
+      // Update psychologist
+      .addCase(updatePsychologist.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updatePsychologist.fulfilled, (state, action) => {
+        state.loading = false;
+        const updated = action.payload;
+        if (updated?._id) {
+          state.list = state.list.map((item) =>
+            item._id === updated._id ? { ...item, ...updated } : item
+          );
+        }
+      })
+      .addCase(updatePsychologist.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to update psychologist';
+      })
+      // Delete psychologist (soft delete)
+      .addCase(deletePsychologist.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deletePsychologist.fulfilled, (state, action) => {
+        state.loading = false;
+        const deleted = action.payload;
+        if (deleted?._id) {
+          state.list = state.list.map((item) =>
+            item._id === deleted._id ? { ...item, isActive: false } : item
+          );
+        }
+      })
+      .addCase(deletePsychologist.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to delete psychologist';
       });
   }
 });
