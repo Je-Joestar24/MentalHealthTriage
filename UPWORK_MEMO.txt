@@ -1,2 +1,0 @@
-Created psychologists list API with pagination, search, filtering, sorting, and triage/diagnosis counts. Endpoint: GET /api/company/psychologists
-
