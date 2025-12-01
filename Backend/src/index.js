@@ -14,6 +14,7 @@ import dashboardRouter, { psychologistDashboardRouter, companyAdminDashboardRout
 import patientsRouter from './routes/patients.routes.js';
 import triageRouter from './routes/triage.routes.js';
 import companyDetailsRouter from './routes/companydetails.routes.js';
+import psychologistsRouter from './routes/psychologists.routes.js';
 import { errorHandler } from './middleware/error.handler.js';
 
 const app = express();
@@ -56,6 +57,7 @@ app.use('/api/company/dashboard', companyAdminDashboardRouter);
 app.use('/api/psychologist/patients', patientsRouter);
 app.use('/api/psychologist/triage', triageRouter);
 app.use('/api/company', companyDetailsRouter);
+app.use('/api/company/psychologists', psychologistsRouter);
 
 // health check
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
