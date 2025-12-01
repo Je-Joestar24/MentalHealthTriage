@@ -1,5 +1,10 @@
 import express from 'express';
-import { getPsychologists } from '../controllers/psychologists.controller.js';
+import { 
+  getPsychologists, 
+  createPsychologist, 
+  updatePsychologist, 
+  deletePsychologist 
+} from '../controllers/psychologists.controller.js';
 import { authenticateToken } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
@@ -18,8 +23,17 @@ const requireSuperAdminOrCompanyAdmin = (req, res, next) => {
 router.use(authenticateToken);
 router.use(requireSuperAdminOrCompanyAdmin);
 
-// GET /api/psychologists - Get list of psychologists with pagination, sorting, filtering, and search
+// GET /api/company/psychologists - Get list of psychologists with pagination, sorting, filtering, and search
 router.get('/', getPsychologists);
+
+// POST /api/company/psychologists - Create a new psychologist
+router.post('/', createPsychologist);
+
+// PUT /api/company/psychologists/:id - Update a psychologist (name, email, password only)
+router.put('/:id', updatePsychologist);
+
+// DELETE /api/company/psychologists/:id - Delete a psychologist (soft delete)
+router.delete('/:id', deletePsychologist);
 
 export default router;
 
