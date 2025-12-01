@@ -8,6 +8,7 @@ import profileReducer from "./profileSlice";
 import patientsReducer from "./patientSlice";
 import triageReducer from "./triageSlice";
 import companyReducer from "./companySlice";
+import psychologistsReducer from "./psychologistsSlice";
 
 export const store = configureStore({
     reducer: {
@@ -20,5 +21,6 @@ export const store = configureStore({
         patients: patientsReducer,
         triage: triageReducer,
         company: companyReducer,
+        psychologists: psychologistsReducer,
     },
 });
