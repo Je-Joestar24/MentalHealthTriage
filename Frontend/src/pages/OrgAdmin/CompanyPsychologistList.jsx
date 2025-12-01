@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Box, Container, Stack, Typography, Card, Divider, Button } from '@mui/material';
 import RefreshOutlinedIcon from '@mui/icons-material/RefreshOutlined';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
@@ -7,8 +7,10 @@ import { useDispatch } from 'react-redux';
 import PsychologistFilters from '../../components/company/psychologists/PsychologistFilters';
 import PsychologistTableList from '../../components/company/psychologists/PsychologistTableList';
 import PsychologistPagination from '../../components/company/psychologists/PsychologistPagination';
+import PsychologistAddModal from '../../components/company/psychologists/PsychologistAddModal';
+import PsychologistEditModal from '../../components/company/psychologists/PsychologistEditModal';
 import usePsychologists from '../../hooks/psychologistsHook';
-import { setLoading } from '../../store/uiSlice';
+import { setLoading, showGlobalDialog } from '../../store/uiSlice';
 
 export default function CompanyPsychologistList() {
   const dispatch = useDispatch();
@@ -21,7 +23,13 @@ export default function CompanyPsychologistList() {
     loadPsychologists,
     updateFilters,
     clear,
+    addPsychologist,
+    editPsychologist,
+    removePsychologist,
   } = usePsychologists();
+  const [addOpen, setAddOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [selectedPsychologist, setSelectedPsychologist] = useState(null);
 
   useEffect(() => {
     dispatch(setLoading(true));
@@ -57,21 +65,37 @@ export default function CompanyPsychologistList() {
     loadPsychologists(filters);
   }, [filters, loadPsychologists]);
 
-  // Placeholder handlers for CRUD operations
+  // Handlers for CRUD operations
   const handleAddPsychologist = useCallback(() => {
-    // TODO: Implement add psychologist functionality
-    console.log('Add psychologist - Coming soon');
+    setAddOpen(true);
   }, []);
 
   const handleEditPsychologist = useCallback((psychologist) => {
-    // TODO: Implement edit psychologist functionality
-    console.log('Edit psychologist:', psychologist);
+    setSelectedPsychologist(psychologist);
+    setEditOpen(true);
   }, []);
 
-  const handleDeletePsychologist = useCallback((psychologist) => {
-    // TODO: Implement delete psychologist functionality
-    console.log('Delete psychologist:', psychologist);
-  }, []);
+  const handleDeletePsychologist = useCallback(
+    (psychologist) => {
+      if (!psychologist?._id) return;
+      dispatch(
+        showGlobalDialog({
+          type: 'danger',
+          title: 'Delete Psychologist',
+          message: `Are you sure you want to delete "${psychologist.name}"? This will deactivate their account.`,
+          confirmText: 'Delete',
+          cancelText: 'Cancel',
+          onConfirm: async () => {
+            const result = await removePsychologist(psychologist._id);
+            if (result?.meta?.requestStatus === 'fulfilled') {
+              loadPsychologists(filters);
+            }
+          },
+        })
+      );
+    },
+    [dispatch, filters, loadPsychologists, removePsychologist]
+  );
 
   const handleViewPatients = useCallback((psychologist) => {
     // TODO: Implement view diagnosed patients functionality
@@ -245,6 +269,26 @@ export default function CompanyPsychologistList() {
         pages={pagination.totalPages}
         total={pagination.totalItems}
         onChange={handlePageChange}
+      />
+
+      <PsychologistAddModal
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        onCreated={() => {
+          loadPsychologists(filters);
+        }}
+      />
+
+      <PsychologistEditModal
+        open={editOpen}
+        onClose={() => {
+          setEditOpen(false);
+          setSelectedPsychologist(null);
+        }}
+        psychologist={selectedPsychologist}
+        onUpdated={() => {
+          loadPsychologists(filters);
+        }}
       />
     </Container>
   );
