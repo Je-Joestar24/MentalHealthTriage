@@ -1,2 +1,0 @@
-Stripe payment backend: signup endpoints, customer/subscription service, payment fields. Individual ($60/mo) & org (per-seat, min 4) ready.
-
