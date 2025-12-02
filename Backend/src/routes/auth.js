@@ -1,5 +1,13 @@
 import { Router } from 'express';
-import { login, seedSuperAdmin, logout, updateProfile } from '../controllers/authController.js';
+import {
+    login,
+    seedSuperAdmin,
+    logout,
+    updateProfile,
+    checkEmail,
+    createTempUser,
+    createCheckoutSession,
+} from '../controllers/authController.js';
 import jwt from 'jsonwebtoken';
 
 const router = Router();
@@ -22,6 +30,11 @@ function requireAuth(req, res, next) {
 // Public routes
 router.post('/login', login);
 router.get('/seed-super-admin', seedSuperAdmin);
+
+// Signup flow routes (public)
+router.post('/check-email', checkEmail);
+router.post('/create-temp-user', createTempUser);
+router.post('/create-checkout-session', createCheckoutSession);
 
 // Protected routes
 router.post('/logout', requireAuth, logout);

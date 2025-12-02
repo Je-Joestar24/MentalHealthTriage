@@ -28,6 +28,17 @@ const OrganizationSchema = new Schema(
       required: true,
       index: true 
     },
+    // Stripe integration fields
+    stripe_customer_id: { type: String, default: null, index: true },
+    stripe_subscription_id: { type: String, default: null, index: true },
+    subscription_status: {
+      type: String,
+      enum: ['active', 'incomplete', 'past_due', 'canceled', 'unpaid'],
+      default: 'incomplete',
+      index: true
+    },
+    is_paid: { type: Boolean, default: false, index: true },
+    seats_limit: { type: Number, default: 4, min: 4 }, // Minimum 4 seats for organizations
   },
   { timestamps: true }
 );

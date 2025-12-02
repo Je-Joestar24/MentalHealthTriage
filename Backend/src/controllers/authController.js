@@ -1,6 +1,15 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import User, { USER_ROLES } from '../models/User.js';
+import {
+  checkEmailAvailability,
+  createTempIndividualUser,
+  createTempOrganizationUser,
+} from '../services/auth.service.js';
+import {
+  createIndividualCheckoutSession,
+  createOrganizationCheckoutSession,
+} from '../services/stripe.service.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_super_secret_change_me';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
@@ -180,6 +189,203 @@ export async function updateProfile(req, res, next) {
             message: 'Profile updated successfully'
         });
     } catch (err) {
+        next(err);
+    }
+}
+
+/**
+ * Check email availability for signup
+ * POST /auth/check-email
+ */
+export async function checkEmail(req, res, next) {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                error: 'Email is required',
+            });
+        }
+
+        const result = await checkEmailAvailability(email);
+
+        return res.json({
+            success: true,
+            ...result,
+        });
+    } catch (err) {
+        next(err);
+    }
+}
+
+/**
+ * Create temporary user before payment
+ * POST /auth/create-temp-user
+ */
+export async function createTempUser(req, res, next) {
+    try {
+        const { accountType, name, email, password, companyName, adminName, seats } = req.body;
+
+        if (!accountType || !['individual', 'organization'].includes(accountType)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Account type must be either "individual" or "organization"',
+            });
+        }
+
+        if (accountType === 'individual') {
+            // Individual account
+            if (!name || !email || !password) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Name, email, and password are required for individual accounts',
+                });
+            }
+
+            const user = await createTempIndividualUser({ name, email, password });
+
+            return res.status(201).json({
+                success: true,
+                data: {
+                    user,
+                    accountType: 'individual',
+                },
+                message: 'Temporary user created successfully',
+            });
+        } else {
+            // Organization account
+            if (!companyName || !adminName || !email || !password) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Company name, admin name, email, and password are required for organization accounts',
+                });
+            }
+
+            const result = await createTempOrganizationUser({
+                companyName,
+                adminName,
+                email,
+                password,
+                seats: seats || 4,
+            });
+
+            return res.status(201).json({
+                success: true,
+                data: {
+                    user: result.user,
+                    organization: result.organization,
+                    accountType: 'organization',
+                },
+                message: 'Temporary user and organization created successfully',
+            });
+        }
+    } catch (err) {
+        // Handle duplicate email error
+        if (err.message.includes('already registered')) {
+            return res.status(409).json({
+                success: false,
+                error: err.message,
+            });
+        }
+
+        // Handle validation errors
+        if (err.message.includes('required') || err.message.includes('Password must')) {
+            return res.status(400).json({
+                success: false,
+                error: err.message,
+            });
+        }
+
+        next(err);
+    }
+}
+
+/**
+ * Create Stripe checkout session
+ * POST /auth/create-checkout-session
+ */
+export async function createCheckoutSession(req, res, next) {
+    try {
+        const { userId, organizationId, accountType, seats, successUrl, cancelUrl } = req.body;
+
+        if (!accountType || !['individual', 'organization'].includes(accountType)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Account type must be either "individual" or "organization"',
+            });
+        }
+
+        if (!successUrl || !cancelUrl) {
+            return res.status(400).json({
+                success: false,
+                error: 'Success URL and cancel URL are required',
+            });
+        }
+
+        // Fetch user to get Stripe customer ID
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: 'User not found',
+            });
+        }
+
+        if (!user.stripe_customer_id) {
+            return res.status(400).json({
+                success: false,
+                error: 'Stripe customer ID not found. Please create user first.',
+            });
+        }
+
+        let session;
+
+        if (accountType === 'individual') {
+            // Create individual checkout session
+            session = await createIndividualCheckoutSession({
+                customerId: user.stripe_customer_id,
+                userId: user._id.toString(),
+                successUrl,
+                cancelUrl,
+            });
+        } else {
+            // Organization account
+            if (!organizationId) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Organization ID is required for organization accounts',
+                });
+            }
+
+            const seatCount = Math.max(4, parseInt(seats, 10) || 4);
+
+            session = await createOrganizationCheckoutSession({
+                customerId: user.stripe_customer_id,
+                organizationId,
+                seats: seatCount,
+                successUrl,
+                cancelUrl,
+            });
+        }
+
+        return res.json({
+            success: true,
+            data: {
+                sessionId: session.id,
+                url: session.url,
+            },
+            message: 'Checkout session created successfully',
+        });
+    } catch (err) {
+        // Handle Stripe errors
+        if (err.message.includes('Stripe') || err.message.includes('checkout')) {
+            return res.status(400).json({
+                success: false,
+                error: err.message,
+            });
+        }
+
         next(err);
     }
 }

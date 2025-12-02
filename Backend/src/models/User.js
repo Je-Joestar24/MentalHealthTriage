@@ -25,6 +25,23 @@ const UserSchema = new Schema(
       required: false,
       index: true 
     },
+    // Stripe integration fields
+    stripe_customer_id: { type: String, default: null, index: true },
+    stripe_subscription_id: { type: String, default: null, index: true },
+    is_paid: { type: Boolean, default: false, index: true },
+    subscription_status: {
+      type: String,
+      enum: ['active', 'incomplete', 'past_due', 'canceled', 'unpaid'],
+      default: 'incomplete',
+      index: true
+    },
+    account_type: {
+      type: String,
+      enum: ['individual', 'organization'],
+      default: null,
+      index: true
+    },
+    trial_end_at: { type: Date, default: null },
   },
   { timestamps: true }
 );
