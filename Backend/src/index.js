@@ -15,6 +15,7 @@ import patientsRouter from './routes/patients.routes.js';
 import triageRouter from './routes/triage.routes.js';
 import companyDetailsRouter from './routes/companydetails.routes.js';
 import psychologistsRouter from './routes/psychologists.routes.js';
+import stripeRouter from './routes/stripe.routes.js';
 import { errorHandler } from './middleware/error.handler.js';
 
 const app = express();
@@ -37,6 +38,12 @@ app.use(
         optionsSuccessStatus: 204,
     })
 );
+
+// Stripe webhook route must be registered BEFORE express.json()
+// because it needs raw body for signature verification
+app.use('/api/stripe', stripeRouter);
+
+// JSON body parser (after webhook route)
 app.use(express.json());
 if (process.env.NODE_ENV === 'development') app.use(morgan('dev'));
 

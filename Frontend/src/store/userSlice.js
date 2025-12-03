@@ -71,6 +71,16 @@ const initialState = {
     error: null,
     signupErrors: null,
     signupMessage: null,
+    // Registration state
+    registration: {
+        step: null, // 'email', 'user', 'checkout', 'payment'
+        tempUser: null,
+        tempOrganization: null,
+        emailChecked: false,
+        checkoutSession: null,
+        loading: false,
+        error: null,
+    },
 };
 const userSlice = createSlice({
     name: 'user',
@@ -93,6 +103,39 @@ const userSlice = createSlice({
             state.token = null;
             state.userLogged = false;
             state.error = null;
+        },
+        // Registration actions
+        setRegistrationStep: (state, action) => {
+            state.registration.step = action.payload;
+        },
+        setRegistrationLoading: (state, action) => {
+            state.registration.loading = !!action.payload;
+        },
+        setRegistrationError: (state, action) => {
+            state.registration.error = action.payload || null;
+        },
+        setEmailChecked: (state, action) => {
+            state.registration.emailChecked = !!action.payload;
+        },
+        setTempUser: (state, action) => {
+            state.registration.tempUser = action.payload;
+        },
+        setTempOrganization: (state, action) => {
+            state.registration.tempOrganization = action.payload;
+        },
+        setCheckoutSession: (state, action) => {
+            state.registration.checkoutSession = action.payload;
+        },
+        clearRegistration: (state) => {
+            state.registration = {
+                step: null,
+                tempUser: null,
+                tempOrganization: null,
+                emailChecked: false,
+                checkoutSession: null,
+                loading: false,
+                error: null,
+            };
         },
     },
 /*     extraReducers: (builder) => {
@@ -147,5 +190,18 @@ const userSlice = createSlice({
     }, */
 });
 
-export const { setAuth, clearAuth, setLoading, setError } = userSlice.actions;
+export const {
+    setAuth,
+    clearAuth,
+    setLoading,
+    setError,
+    setRegistrationStep,
+    setRegistrationLoading,
+    setRegistrationError,
+    setEmailChecked,
+    setTempUser,
+    setTempOrganization,
+    setCheckoutSession,
+    clearRegistration,
+} = userSlice.actions;
 export default userSlice.reducer;
