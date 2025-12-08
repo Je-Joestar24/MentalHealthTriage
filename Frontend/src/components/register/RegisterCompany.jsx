@@ -47,6 +47,13 @@ const RegisterCompany = ({ email, onNext, existingStatus }) => {
             return;
         }
 
+        // Store credentials temporarily for auto-login after payment
+        sessionStorage.setItem('pendingRegistration', JSON.stringify({
+            email,
+            password,
+            accountType: 'organization',
+        }));
+
         const result = await createTempUser({
             accountType: 'organization',
             companyName: companyName.trim(),
@@ -58,6 +65,8 @@ const RegisterCompany = ({ email, onNext, existingStatus }) => {
 
         if (!result.success) {
             setLocalError(result.error || 'Unable to create organization account');
+            // Clear stored credentials on error
+            sessionStorage.removeItem('pendingRegistration');
             return;
         }
 

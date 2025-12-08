@@ -83,9 +83,32 @@ export async function createCheckoutSession(sessionData) {
     }
 }
 
+/**
+ * Verify Stripe checkout session after payment
+ * @param {string} sessionId - Stripe checkout session ID
+ * @returns {Promise<{success: boolean, data?: Object, error?: string}>}
+ */
+export async function verifyCheckoutSession(sessionId) {
+    try {
+        const { data } = await api.get(`/api/stripe/verify-session/${sessionId}`);
+        return {
+            success: true,
+            data: data.data,
+            message: data.message,
+        };
+    } catch (error) {
+        const message = error?.response?.data?.error || error.message || 'Failed to verify checkout session';
+        return {
+            success: false,
+            error: message,
+        };
+    }
+}
+
 export default {
     checkEmail,
     createTempUser,
     createCheckoutSession,
+    verifyCheckoutSession,
 };
 

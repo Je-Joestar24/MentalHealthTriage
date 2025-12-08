@@ -41,8 +41,8 @@ const RegisterStripePayment = ({ accountType, seats = 4, onBack }) => {
             userId: tempUser._id,
             accountType,
             seats,
-            // Success / cancel URLs can be adjusted to match your frontend routes
-            successUrl: `${window.location.origin}/auth/register?status=success`,
+            // Success URL includes session_id parameter for verification
+            successUrl: `${window.location.origin}/auth/register?status=success&session_id={CHECKOUT_SESSION_ID}`,
             cancelUrl: `${window.location.origin}/auth/register?status=cancelled`,
         };
 

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Box, Card, CardContent, Typography, Button, Chip } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, Card, CardContent, Typography, Button, Chip, CircularProgress, Alert } from '@mui/material';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import useUser from '../../hooks/userHook';
 import RegisterLeftPanel from '../../components/register/RegisterLeftPanel';
 import RegisterEmailVerify from '../../components/register/RegisterEmailVerify';
@@ -7,6 +8,7 @@ import RegisterIndividual from '../../components/register/RegisterIndividual';
 import RegisterCompany from '../../components/register/RegisterCompany';
 import RegisterStripePayment from '../../components/register/RegisterStripePayment';
 import RegisterBreadCrumbs from '../../components/register/RegisterBreadCrumbs';
+import registerService from '../../services/auth/registerService';
 
 /**
  * High-level registration flow:
@@ -14,15 +16,20 @@ import RegisterBreadCrumbs from '../../components/register/RegisterBreadCrumbs';
  * 2) Verify email
  * 3) Enter details
  * 4) Stripe payment
+ * 5) Auto-login after successful payment
  */
 const RegisterPage = () => {
-    const { registration } = useUser();
+    const { registration, login } = useUser();
+    const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
 
     const [accountType, setAccountType] = useState(null); // 'individual' | 'organization'
     const [step, setStep] = useState('select'); // 'select' | 'email' | 'details' | 'payment'
     const [email, setEmail] = useState('');
     const [emailStatus, setEmailStatus] = useState(null); // backend status string
     const [orgSeats, setOrgSeats] = useState(4);
+    const [processingPayment, setProcessingPayment] = useState(false);
+    const [paymentError, setPaymentError] = useState(null);
 
     const handleSelectType = (type) => {
         setAccountType(type);
@@ -73,6 +80,69 @@ const RegisterPage = () => {
             setStep('details');
         }
     };
+
+    // Handle Stripe payment success redirect
+    useEffect(() => {
+        const handlePaymentSuccess = async () => {
+            const status = searchParams.get('status');
+            const sessionId = searchParams.get('session_id');
+
+            if (status === 'success' && sessionId) {
+                setProcessingPayment(true);
+                setPaymentError(null);
+
+                try {
+                    // Verify the checkout session with backend
+                    const verifyResult = await registerService.verifyCheckoutSession(sessionId);
+                    
+                    if (!verifyResult.success) {
+                        setPaymentError(verifyResult.error || 'Failed to verify payment');
+                        setProcessingPayment(false);
+                        return;
+                    }
+
+                    // Get stored credentials
+                    const pendingRegistration = sessionStorage.getItem('pendingRegistration');
+                    if (!pendingRegistration) {
+                        setPaymentError('No pending registration credentials found. Please log in manually.');
+                        setProcessingPayment(false);
+                        return;
+                    }
+
+                    const { email, password } = JSON.parse(pendingRegistration);
+
+                    // Auto-login with stored credentials
+                    const loginResult = await login(email, password);
+                    
+                    if (loginResult.success) {
+                        // Clear stored credentials
+                        sessionStorage.removeItem('pendingRegistration');
+                        
+                        // Role-based redirect (same as login page)
+                        const role = loginResult.data?.user?.role;
+                        const route = role === 'super_admin' ? '/super/dashboard'
+                            : role === 'company_admin' ? '/company/dashboard'
+                            : '/psychologist/dashboard';
+                        
+                        navigate(route, { replace: true });
+                    } else {
+                        setPaymentError(loginResult.error || 'Payment successful but auto-login failed. Please log in manually.');
+                        setProcessingPayment(false);
+                    }
+                } catch (error) {
+                    console.error('Error handling payment success:', error);
+                    setPaymentError('An error occurred while processing your payment. Please try logging in manually.');
+                    setProcessingPayment(false);
+                }
+            } else if (status === 'cancelled') {
+                // User cancelled payment, stay on registration page
+                // Clear URL params
+                navigate('/auth/register', { replace: true });
+            }
+        };
+
+        handlePaymentSuccess();
+    }, [searchParams, login, navigate]);
 
     const renderStepContent = () => {
         if (!accountType || step === 'select') {
@@ -285,31 +355,61 @@ const RegisterPage = () => {
                             gap: 3,
                         }}
                     >
-                        {/* Header Section */}
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                textAlign: 'center',
-                                mb: 1,
-                            }}
-                        >
-                            <Typography
-                                component="h1"
-                                variant="h5"
-                                sx={{ fontWeight: 700, mb: 1 }}
+                        {/* Payment Processing State */}
+                        {processingPayment && (
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: 2,
+                                    py: 6,
+                                }}
                             >
-                                Get started
-                            </Typography>
-                            <Typography
-                                component="p"
-                                variant="body2"
-                                sx={{ color: 'text.secondary', maxWidth: 480 }}
-                            >
-                                Complete a few quick steps to set up your account.
-                            </Typography>
-                        </Box>
+                                <CircularProgress size={48} />
+                                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                                    Processing your payment...
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center' }}>
+                                    Please wait while we verify your payment and log you in.
+                                </Typography>
+                            </Box>
+                        )}
+
+                        {paymentError && (
+                            <Alert severity="error" sx={{ mb: 3 }} role="alert">
+                                {paymentError}
+                            </Alert>
+                        )}
+
+                        {!processingPayment && (
+                            <>
+                                {/* Header Section */}
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        textAlign: 'center',
+                                        mb: 1,
+                                    }}
+                                >
+                                    <Typography
+                                        component="h1"
+                                        variant="h5"
+                                        sx={{ fontWeight: 700, mb: 1 }}
+                                    >
+                                        Get started
+                                    </Typography>
+                                    <Typography
+                                        component="p"
+                                        variant="body2"
+                                        sx={{ color: 'text.secondary', maxWidth: 480 }}
+                                    >
+                                        Complete a few quick steps to set up your account.
+                                    </Typography>
+                                </Box>
 
                         {/* Breadcrumbs */}
                         {(accountType || step !== 'select') && (
@@ -425,17 +525,19 @@ const RegisterPage = () => {
                             </Button>
                         </Box>
 
-                        {registration?.step === 'payment' && (
-                            <Typography
-                                variant="caption"
-                                sx={{
-                                    mt: 2,
-                                    color: 'text.secondary',
-                                    textAlign: 'center',
-                                }}
-                            >
-                                You will be redirected to Stripe to securely complete your payment.
-                            </Typography>
+                                {registration?.step === 'payment' && (
+                                    <Typography
+                                        variant="caption"
+                                        sx={{
+                                            mt: 2,
+                                            color: 'text.secondary',
+                                            textAlign: 'center',
+                                        }}
+                                    >
+                                        You will be redirected to Stripe to securely complete your payment.
+                                    </Typography>
+                                )}
+                            </>
                         )}
                     </Box>
                 </Box>
