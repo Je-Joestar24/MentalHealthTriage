@@ -9,6 +9,10 @@ export default function AuthActions() {
     const handleLoginNavigation = () => {
         navigate('/auth/login');
     };
+
+    const handleRegisterNavigation = () => {
+        navigate('/auth/register');
+    }
     return (
         <div className="nav-actions" role="group" aria-label="Authentication Actions">
             <button
@@ -19,7 +23,7 @@ export default function AuthActions() {
                 Login
             </button>
             <button
-                onClick={() => { /* openModal("signup") */ }}
+                onClick={handleRegisterNavigation}
                 className="btn btn-primary"
                 aria-label="Sign up"
             >

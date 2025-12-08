@@ -1,17 +1,21 @@
 import api from '../../api/axios';
 
 /**
- * Check email availability for registration
- * @param {string} email - Email to check
- * @returns {Promise<{success: boolean, available?: boolean, error?: string}>}
+ * Check email availability for registration.
+ * The backend returns:
+ * - status: 'available' | 'unpaid_existing' | 'exists_paid'
+ * - available: boolean
+ * - redirect_to_payment?: boolean
+ * - userId?: string
+ * - accountType?: 'individual' | 'organization'
  */
 export async function checkEmail(email) {
     try {
         const { data } = await api.post('/api/auth/check-email', { email });
+        // Spread backend result so callers can branch on status/flags
         return {
             success: true,
-            available: data.available,
-            message: data.message,
+            ...data,
         };
     } catch (error) {
         const message = error?.response?.data?.error || error.message || 'Failed to check email';

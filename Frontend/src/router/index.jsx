@@ -2,6 +2,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import App from "../App";
 import Home from "../pages/Home";
 import Login from "../pages/Login";
+import RegisterPage from "../pages/Auth/RegisterPage";
 import AuthLayout from "../layouts/AuthLayout";
 import HomeLayout from "../layouts/HomeLayout";
 import MainLayout from "../layouts/MainLayout";
@@ -53,9 +54,13 @@ const router = createBrowserRouter([
                             </RequireGuest>
                         )
                     },
-                    // Add more auth routes here like:
-                    // { path: "register", element: <Register /> },
-                    // { path: "forgot-password", element: <ForgotPassword /> },
+                    {
+                        path: "register", element: (
+                            <RequireGuest>
+                                <RegisterPage />
+                            </RequireGuest>
+                        )
+                    },
                 ]
             },
             // Main Layout - for dashboard, profile, settings, etc.
