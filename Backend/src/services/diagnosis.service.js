@@ -371,3 +371,228 @@ export async function getAllSymptoms() {
   return result.map(r => r.name);
 }
 
+/**
+ * Get all notes for a diagnosis with metadata and sorted by ownership/type
+ */
+export async function getDiagnosisNotes(diagnosisId, user) {
+  if (!mongoose.Types.ObjectId.isValid(diagnosisId)) {
+    throw new Error('Invalid diagnosis ID');
+  }
+
+  const diagnosis = await Diagnosis.findById(diagnosisId)
+    .populate('createdBy', 'name email role organization')
+    .populate('organization', 'name')
+    .populate({
+      path: 'diagnosisNotes.createdBy',
+      select: 'name email role organization',
+      populate: {
+        path: 'organization',
+        select: 'name _id'
+      }
+    });
+
+  if (!diagnosis) {
+    throw new Error('Diagnosis not found');
+  }
+
+  const userId = user._id || user.id;
+  const userOrgId = user.organization?._id || user.organization;
+
+  // Get all notes with metadata
+  const notesWithMetadata = (diagnosis.diagnosisNotes || []).map(note => {
+    const noteCreatorId = note.createdBy._id || note.createdBy;
+    const noteCreator = typeof note.createdBy === 'object' ? note.createdBy : null;
+    
+    // Determine note ownership
+    const isOwned = noteCreatorId.toString() === userId.toString();
+    
+    // Determine note type based on creator
+    let noteType = 'individual';
+    if (noteCreator) {
+      if (noteCreator.role === 'super_admin') {
+        noteType = 'global';
+      } else if (noteCreator.organization) {
+        noteType = 'organization';
+      } else {
+        noteType = 'individual';
+      }
+    }
+
+    // Determine if note belongs to user's organization
+    const belongsToUserOrg = noteCreator?.organization && 
+      (noteCreator.organization._id || noteCreator.organization).toString() === userOrgId?.toString();
+
+    return {
+      _id: note._id,
+      content: note.content,
+      createdBy: {
+        _id: noteCreatorId,
+        name: noteCreator?.name || 'Unknown',
+        email: noteCreator?.email || 'Unknown',
+      },
+      createdAt: note.createdAt,
+      updatedAt: note.updatedAt,
+      metadata: {
+        ownership: isOwned ? 'owned' : (belongsToUserOrg ? 'organization' : noteType),
+        type: noteType,
+        isOwned,
+        belongsToUserOrg,
+      },
+    };
+  });
+
+  // Sort notes: owned first, then by type (global, organization, individual)
+  notesWithMetadata.sort((a, b) => {
+    // First sort by ownership (owned notes first)
+    if (a.metadata.isOwned && !b.metadata.isOwned) return -1;
+    if (!a.metadata.isOwned && b.metadata.isOwned) return 1;
+    
+    // Then sort by type: global, organization, individual
+    const typeOrder = { global: 0, organization: 1, individual: 2 };
+    const aOrder = typeOrder[a.metadata.type] ?? 3;
+    const bOrder = typeOrder[b.metadata.type] ?? 3;
+    
+    if (aOrder !== bOrder) return aOrder - bOrder;
+    
+    // Finally sort by creation date (newest first)
+    return new Date(b.createdAt) - new Date(a.createdAt);
+  });
+
+  return notesWithMetadata;
+}
+
+/**
+ * Add a note to a diagnosis
+ */
+export async function addDiagnosisNote(diagnosisId, content, user) {
+  if (!mongoose.Types.ObjectId.isValid(diagnosisId)) {
+    throw new Error('Invalid diagnosis ID');
+  }
+
+  if (!content || !content.trim()) {
+    throw new Error('Note content is required');
+  }
+
+  const diagnosis = await Diagnosis.findById(diagnosisId);
+  if (!diagnosis) {
+    throw new Error('Diagnosis not found');
+  }
+
+  const userId = user._id || user.id;
+
+  // Add the note
+  diagnosis.diagnosisNotes.push({
+    content: content.trim(),
+    createdBy: userId,
+  });
+
+  await diagnosis.save();
+
+  // Return the newly added note with populated creator
+  await diagnosis.populate({
+    path: 'diagnosisNotes.createdBy',
+    select: 'name email role organization',
+  });
+  
+  const newNote = diagnosis.diagnosisNotes[diagnosis.diagnosisNotes.length - 1];
+  
+  return {
+    _id: newNote._id,
+    content: newNote.content,
+    createdBy: {
+      _id: newNote.createdBy._id,
+      name: newNote.createdBy.name,
+      email: newNote.createdBy.email,
+    },
+    createdAt: newNote.createdAt,
+    updatedAt: newNote.updatedAt,
+  };
+}
+
+/**
+ * Update a diagnosis note (only if user owns it)
+ */
+export async function updateDiagnosisNote(diagnosisId, noteId, content, user) {
+  if (!mongoose.Types.ObjectId.isValid(diagnosisId) || !mongoose.Types.ObjectId.isValid(noteId)) {
+    throw new Error('Invalid diagnosis or note ID');
+  }
+
+  if (!content || !content.trim()) {
+    throw new Error('Note content is required');
+  }
+
+  const diagnosis = await Diagnosis.findById(diagnosisId);
+  if (!diagnosis) {
+    throw new Error('Diagnosis not found');
+  }
+
+  const userId = user._id || user.id;
+  const note = diagnosis.diagnosisNotes.id(noteId);
+
+  if (!note) {
+    throw new Error('Note not found');
+  }
+
+  // Check if user owns the note
+  const noteCreatorId = note.createdBy.toString();
+  if (noteCreatorId !== userId.toString()) {
+    throw new Error('You do not have permission to edit this note');
+  }
+
+  // Update the note
+  note.content = content.trim();
+  await diagnosis.save();
+
+  // Return updated note with populated creator
+  await diagnosis.populate({
+    path: 'diagnosisNotes.createdBy',
+    select: 'name email role organization',
+  });
+  const updatedNote = diagnosis.diagnosisNotes.id(noteId);
+
+  return {
+    _id: updatedNote._id,
+    content: updatedNote.content,
+    createdBy: {
+      _id: updatedNote.createdBy._id,
+      name: updatedNote.createdBy.name,
+      email: updatedNote.createdBy.email,
+    },
+    createdAt: updatedNote.createdAt,
+    updatedAt: updatedNote.updatedAt,
+  };
+}
+
+/**
+ * Delete a diagnosis note (only if user owns it)
+ */
+export async function deleteDiagnosisNote(diagnosisId, noteId, user) {
+  if (!mongoose.Types.ObjectId.isValid(diagnosisId) || !mongoose.Types.ObjectId.isValid(noteId)) {
+    throw new Error('Invalid diagnosis or note ID');
+  }
+
+  const diagnosis = await Diagnosis.findById(diagnosisId);
+  if (!diagnosis) {
+    throw new Error('Diagnosis not found');
+  }
+
+  const userId = user._id || user.id;
+  const note = diagnosis.diagnosisNotes.id(noteId);
+
+  if (!note) {
+    throw new Error('Note not found');
+  }
+
+  // Check if user owns the note
+  const noteCreatorId = note.createdBy.toString();
+  if (noteCreatorId !== userId.toString()) {
+    throw new Error('You do not have permission to delete this note');
+  }
+
+  // Remove the note
+  note.deleteOne();
+  await diagnosis.save();
+
+  return { success: true };
+}
+

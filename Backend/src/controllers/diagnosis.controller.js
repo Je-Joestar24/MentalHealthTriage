@@ -106,3 +106,40 @@ export const getAllSymptoms = asyncWrapper(async (req, res) => {
   const list = await diagnosisService.getAllSymptoms();
   res.json({ success: true, data: list });
 });
+
+export const getDiagnosisNotes = asyncWrapper(async (req, res) => {
+  const notes = await diagnosisService.getDiagnosisNotes(req.params.id, req.user);
+  res.json({
+    success: true,
+    data: notes
+  });
+});
+
+export const addDiagnosisNote = asyncWrapper(async (req, res) => {
+  const note = await diagnosisService.addDiagnosisNote(req.params.id, req.body.content, req.user);
+  res.status(201).json({
+    success: true,
+    data: note
+  });
+});
+
+export const updateDiagnosisNote = asyncWrapper(async (req, res) => {
+  const note = await diagnosisService.updateDiagnosisNote(
+    req.params.id,
+    req.params.noteId,
+    req.body.content,
+    req.user
+  );
+  res.json({
+    success: true,
+    data: note
+  });
+});
+
+export const deleteDiagnosisNote = asyncWrapper(async (req, res) => {
+  await diagnosisService.deleteDiagnosisNote(req.params.id, req.params.noteId, req.user);
+  res.json({
+    success: true,
+    message: 'Note deleted successfully'
+  });
+});

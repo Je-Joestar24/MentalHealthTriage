@@ -14,6 +14,14 @@ const DurationRuleSchema = new Schema(
   { _id: false }
 );
 
+const DiagnosisNoteSchema = new Schema(
+  {
+    content: { type: String, required: true, trim: true },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  },
+  { timestamps: true }
+);
+
 const DiagnosisSchema = new Schema(
   {
     // Core identifiers
@@ -51,7 +59,8 @@ const DiagnosisSchema = new Schema(
     specifiers: { type: Schema.Types.Mixed }, // String or array (CSV imports use arrays from semicolon-separated values)
 
     // Misc
-    notes: { type: String, trim: true },
+    notes: { type: String, trim: true }, // Legacy field - kept for backward compatibility
+    diagnosisNotes: [DiagnosisNoteSchema], // New array of notes (1-to-many)
     criteriaPage: { type: Number },
 
     // Original source control
