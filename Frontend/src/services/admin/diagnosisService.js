@@ -88,4 +88,48 @@ export const getAllSymptoms = async () => {
     }
 };
 
+// Notes: list
+export const getDiagnosisNotes = async (diagnosisId) => {
+    try {
+        const { data } = await api.get(`/api/diagnoses/${diagnosisId}/notes`);
+        return { success: true, data: data.data };
+    } catch (error) {
+        const message = error?.response?.data?.error || error.message || 'Failed to load notes';
+        return { success: false, error: message };
+    }
+};
+
+// Notes: add
+export const addDiagnosisNote = async (diagnosisId, content) => {
+    try {
+        const { data } = await api.post(`/api/diagnoses/${diagnosisId}/notes`, { content });
+        return { success: true, data: data.data };
+    } catch (error) {
+        const message = error?.response?.data?.error || error.message || 'Failed to add note';
+        return { success: false, error: message };
+    }
+};
+
+// Notes: update
+export const updateDiagnosisNote = async (diagnosisId, noteId, content) => {
+    try {
+        const { data } = await api.put(`/api/diagnoses/${diagnosisId}/notes/${noteId}`, { content });
+        return { success: true, data: data.data };
+    } catch (error) {
+        const message = error?.response?.data?.error || error.message || 'Failed to update note';
+        return { success: false, error: message };
+    }
+};
+
+// Notes: delete
+export const deleteDiagnosisNote = async (diagnosisId, noteId) => {
+    try {
+        const { data } = await api.delete(`/api/diagnoses/${diagnosisId}/notes/${noteId}`);
+        return { success: true, message: data.message };
+    } catch (error) {
+        const message = error?.response?.data?.error || error.message || 'Failed to delete note';
+        return { success: false, error: message };
+    }
+};
+
 

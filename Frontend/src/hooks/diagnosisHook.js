@@ -12,6 +12,12 @@ import {
   fetchSymptoms
 } from '../store/diagnosisSlice';
 import { setLoading, displayNotification, showGlobalDialog } from '../store/uiSlice';
+import {
+  fetchDiagnosisNotes,
+  addDiagnosisNote,
+  updateDiagnosisNote,
+  deleteDiagnosisNote
+} from '../store/diagnosisSlice';
 
 const useDiagnosis = () => {
   const dispatch = useDispatch();
@@ -32,6 +38,47 @@ const useDiagnosis = () => {
 
   const loadDiagnosis = useCallback((id) => {
     dispatch(fetchDiagnosisById(id));
+  }, [dispatch]);
+
+  // Notes
+  const loadDiagnosisNotes = useCallback((diagnosisId) => {
+    dispatch(fetchDiagnosisNotes(diagnosisId));
+  }, [dispatch]);
+
+  const createDiagnosisNote = useCallback(async (diagnosisId, content) => {
+    const result = await dispatch(addDiagnosisNote({ diagnosisId, content }));
+    if (addDiagnosisNote.fulfilled.match(result)) {
+        dispatch(displayNotification({ message: 'Note added', type: 'success' }));
+    } else {
+        const errorMessage = typeof result.payload === 'string' ? result.payload :
+            (result.payload?.message || 'Failed to add note');
+        dispatch(displayNotification({ message: errorMessage, type: 'error' }));
+    }
+    return result;
+  }, [dispatch]);
+
+  const editDiagnosisNote = useCallback(async (diagnosisId, noteId, content) => {
+    const result = await dispatch(updateDiagnosisNote({ diagnosisId, noteId, content }));
+    if (updateDiagnosisNote.fulfilled.match(result)) {
+        dispatch(displayNotification({ message: 'Note updated', type: 'success' }));
+    } else {
+        const errorMessage = typeof result.payload === 'string' ? result.payload :
+            (result.payload?.message || 'Failed to update note');
+        dispatch(displayNotification({ message: errorMessage, type: 'error' }));
+    }
+    return result;
+  }, [dispatch]);
+
+  const removeDiagnosisNote = useCallback(async (diagnosisId, noteId) => {
+    const result = await dispatch(deleteDiagnosisNote({ diagnosisId, noteId }));
+    if (deleteDiagnosisNote.fulfilled.match(result)) {
+        dispatch(displayNotification({ message: 'Note deleted', type: 'success' }));
+    } else {
+        const errorMessage = typeof result.payload === 'string' ? result.payload :
+            (result.payload?.message || 'Failed to delete note');
+        dispatch(displayNotification({ message: errorMessage, type: 'error' }));
+    }
+    return result;
   }, [dispatch]);
 
   const createDiagnosis = useCallback(async (payload) => {
@@ -133,6 +180,8 @@ const useDiagnosis = () => {
     dispatch(fetchSymptoms());
   }, [dispatch]);
   const symptoms = diagnosisState.symptoms;
+  const notes = diagnosisState.notes;
+  const notesLoading = diagnosisState.notesLoading;
 
   const pagination = diagnosisState.pagination;
 
@@ -162,7 +211,14 @@ const useDiagnosis = () => {
     bulkImportDiagnoses,
     updateFilters,
     clearAllMessages,
-    loadSymptoms
+    loadSymptoms,
+    // notes
+    loadDiagnosisNotes,
+    createDiagnosisNote,
+    editDiagnosisNote,
+    removeDiagnosisNote,
+    notes,
+    notesLoading
   };
 };
 
