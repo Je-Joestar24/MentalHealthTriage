@@ -1,5 +1,5 @@
 import User from '../models/User.js';
-import bcrypt from 'bcryptjs';
+// Password hashing is handled by the User model pre-save hook.
 
 /**
  * Get all individual psychologists (no organization reference)
@@ -324,13 +324,13 @@ export const updatePsychologist = async (psychologistId, updateData) => {
     updateFields.name = updateData.name.trim();
   }
 
-  // Update password
+  // Update password (let User pre-save hook hash it)
   if (updateData.password !== undefined) {
-    if (updateData.password.length < 8) {
+    if (!updateData.password || updateData.password.length < 8) {
       throw new Error('Password must be at least 8 characters long');
     }
-    const salt = await bcrypt.genSalt(10);
-    updateFields.password = await bcrypt.hash(updateData.password, salt);
+    updateFields.password = updateData.password.trim();
+    updateFields.passwordChangedAt = new Date();
   }
 
   // Apply updates

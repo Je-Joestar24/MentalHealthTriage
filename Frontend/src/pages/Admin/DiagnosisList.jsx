@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { Box, Button, Container, Stack, Typography, Card, Divider } from "@mui/material";
+import { Box, Button, Container, Stack, Typography, Card, Divider, Dialog, DialogTitle, DialogContent } from "@mui/material";
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import { motion } from 'framer-motion';
 import useDiagnosis from "../../hooks/diagnosisHook";
@@ -9,6 +9,8 @@ import DiagnosisPagination from "../../components/admin/diagnosis/DiagnosisPagin
 import DiagnosisAddModal from "../../components/admin/diagnosis/DiagnosisAddModal";
 import DiagnosisEditModal from "../../components/admin/diagnosis/DiagnosisEditModal";
 import DiagnosisImportModal from "../../components/admin/diagnosis/DiagnosisImportModal";
+import DiagnosisAddNoteModal from "../../components/admin/diagnosis/DiagnosisAddNoteModal";
+import DiagnosisNotesList from "../../components/admin/diagnosis/DiagnosisNotesList";
 
 export default function DiagnosisList() {
     const {
@@ -19,6 +21,20 @@ export default function DiagnosisList() {
         updateFilters,
         loadDiagnoses,
         confirmDeleteDiagnosis,
+        notes,
+        notesLoading,
+        notesError,
+        // Note handlers from hook
+        handleAddNote,
+        handleViewNotes,
+        handleCreateNote,
+        handleEditNote,
+        handleDeleteNote,
+        handleCloseAddNote,
+        handleCloseViewNotes,
+        openAddNote,
+        openViewNotes,
+        selectedDiagnosis,
     } = useDiagnosis();
 
     const [openAdd, setOpenAdd] = useState(false);
@@ -190,6 +206,61 @@ export default function DiagnosisList() {
                     // List already refreshed in modal
                 }}
             />
+
+            <DiagnosisAddNoteModal
+                open={openAddNote}
+                onClose={handleCloseAddNote}
+                onAdd={handleCreateNote}
+                loading={notesLoading}
+            />
+            
+
+            <Dialog
+                open={openViewNotes}
+                onClose={handleCloseViewNotes}
+                maxWidth="md"
+                fullWidth
+                PaperProps={{
+                    sx: {
+                        borderRadius: 2,
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                    },
+                }}
+            >
+                <DialogTitle sx={{ pb: 1 }}>
+                    <Stack direction="row" alignItems="center" justifyContent="space-between">
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                            {selectedDiagnosis?.name || 'Diagnosis'} Notes
+                        </Typography>
+                        <Button
+                            variant="contained"
+                            size="small"
+                            startIcon={<AddCircleOutlineIcon />}
+                            onClick={() => {
+                                handleCloseViewNotes();
+                                handleAddNote(selectedDiagnosis);
+                            }}
+                            sx={{
+                                textTransform: 'none',
+                                fontWeight: 600,
+                                borderRadius: 1.5,
+                            }}
+                        >
+                            Add Note
+                        </Button>
+                    </Stack>
+                </DialogTitle>
+                <DialogContent>
+                    <DiagnosisNotesList
+                        diagnosisId={selectedDiagnosis?._id}
+                        notes={notes}
+                        loading={notesLoading}
+                        error={notesError}
+                        onEditNote={handleEditNote}
+                        onDeleteNote={handleDeleteNote}
+                    />
+                </DialogContent>
+            </Dialog>
         </Container>
     );
 }

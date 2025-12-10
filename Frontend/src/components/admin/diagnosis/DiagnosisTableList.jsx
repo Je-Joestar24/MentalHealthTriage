@@ -22,7 +22,10 @@ import {
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
+import NoteAddOutlinedIcon from '@mui/icons-material/NoteAddOutlined';
+import NotesOutlinedIcon from '@mui/icons-material/NotesOutlined';
 import useUser from '../../../hooks/userHook';
+import useDiagnosis from '../../../hooks/diagnosisHook';
 
 const systemColorMap = {
   'DSM-5': 'primary',
@@ -35,7 +38,9 @@ const typeColorMap = {
 };
 
 const DiagnosisTableList = ({ rows = [], loading, onEdit, onDelete }) => {
-  const { user } = useUser()
+  const { user } = useUser();
+  const { handleAddNote, handleViewNotes } = useDiagnosis();
+  
   return (
     <Card elevation={0} sx={{ p: 1.5, overflow: 'hidden' }}>
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
@@ -122,19 +127,78 @@ const DiagnosisTableList = ({ rows = [], loading, onEdit, onDelete }) => {
                             {(user?.role == 'super_admin' || 
                               (user?.role == 'psychologist' && row.type == 'personal' && user?.id == row?.createdBy?._id) ||
                               (user?.role == 'company_admin' && row.type == 'organization')) && (<><Tooltip title="Edit" arrow>
-                              <IconButton onClick={() => onEdit?.(row)}>
-                                <EditOutlinedIcon />
+                              <IconButton 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onEdit?.(row);
+                                }} 
+                                size="small"
+                                aria-label="Edit diagnosis"
+                              >
+                                <EditOutlinedIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
                             <Tooltip title="Delete" arrow>
-                              <IconButton color="error" onClick={() => onDelete?.(row)}>
-                                <DeleteOutlineIcon />
+                              <IconButton 
+                                color="error" 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onDelete?.(row);
+                                }} 
+                                size="small"
+                                aria-label="Delete diagnosis"
+                              >
+                                <DeleteOutlineIcon fontSize="small" />
                               </IconButton>
                             </Tooltip></>)}
                             
+                            <Tooltip title="Add Note" arrow>
+                              <IconButton 
+                                color="primary" 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  if (handleAddNote && typeof handleAddNote === 'function') {
+                                    handleAddNote(row);
+                                  }
+                                }} 
+                                size="small"
+                                sx={{ 
+                                  '&:hover': { 
+                                    backgroundColor: alpha('#2563eb', 0.1) 
+                                  } 
+                                }}
+                                aria-label="Add note"
+                              >
+                                <NoteAddOutlinedIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            
+                            <Tooltip title="View Notes" arrow>
+                              <IconButton 
+                                color="primary" 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  if (handleViewNotes && typeof handleViewNotes === 'function') {
+                                    handleViewNotes(row);
+                                  }
+                                }} 
+                                size="small"
+                                sx={{ 
+                                  '&:hover': { 
+                                    backgroundColor: alpha('#2563eb', 0.1) 
+                                  } 
+                                }}
+                                aria-label="View notes"
+                              >
+                                <NotesOutlinedIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            
                             <Tooltip title="Insights" arrow>
-                              <IconButton disabled color="primary">
-                                <ScienceOutlinedIcon />
+                              <IconButton disabled color="primary" size="small">
+                                <ScienceOutlinedIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
                           </Stack>

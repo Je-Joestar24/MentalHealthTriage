@@ -98,8 +98,13 @@ export default function IndividualEditModal({ open, onClose, data, onUpdated }) 
         updateData.email = form.email.trim();
       }
       
-      if (showPasswordField && form.password) {
-        updateData.password = form.password;
+      if (showPasswordField) {
+        if (!form.password || !form.password.trim()) {
+          setErrors((prev) => ({ ...prev, password: 'Password is required' }));
+          setSubmitting(false);
+          return;
+        }
+        updateData.password = form.password.trim();
       }
 
       // Check if there's anything to update

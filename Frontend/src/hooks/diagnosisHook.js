@@ -16,7 +16,11 @@ import {
   fetchDiagnosisNotes,
   addDiagnosisNote,
   updateDiagnosisNote,
-  deleteDiagnosisNote
+  deleteDiagnosisNote,
+  setOpenAddNote,
+  setOpenViewNotes,
+  setSelectedDiagnosis,
+  closeNoteModals
 } from '../store/diagnosisSlice';
 
 const useDiagnosis = () => {
@@ -179,9 +183,77 @@ const useDiagnosis = () => {
   const loadSymptoms = useCallback(() => {
     dispatch(fetchSymptoms());
   }, [dispatch]);
+
+  // Modal state from Redux
+  const openAddNote = diagnosisState.openAddNote;
+  const openViewNotes = diagnosisState.openViewNotes;
+  const selectedDiagnosis = diagnosisState.selectedDiagnosis;
+
+  // Handlers for opening modals
+  const handleAddNote = useCallback((row) => {
+    dispatch(setSelectedDiagnosis(row));
+    dispatch(setOpenAddNote(true));
+  }, [dispatch]);
+
+  const handleViewNotes = useCallback((row) => {
+    dispatch(setSelectedDiagnosis(row));
+    dispatch(setOpenViewNotes(true));
+    loadDiagnosisNotes(row._id);
+  }, [dispatch, loadDiagnosisNotes]);
+
+  const handleCloseAddNote = useCallback(() => {
+    dispatch(setOpenAddNote(false));
+    dispatch(setSelectedDiagnosis(null));
+  }, [dispatch]);
+
+  const handleCloseViewNotes = useCallback(() => {
+    dispatch(setOpenViewNotes(false));
+    dispatch(setSelectedDiagnosis(null));
+  }, [dispatch]);
+
+  // Enhanced create note handler that manages modal state
+  const handleCreateNote = useCallback(async (content) => {
+    if (!selectedDiagnosis) return;
+    const result = await createDiagnosisNote(selectedDiagnosis._id, content);
+    if (addDiagnosisNote.fulfilled.match(result)) {
+      dispatch(setOpenAddNote(false));
+      // Reload notes if viewing notes dialog is open
+      if (openViewNotes && selectedDiagnosis) {
+        loadDiagnosisNotes(selectedDiagnosis._id);
+      }
+      dispatch(setSelectedDiagnosis(null));
+      return result;
+    }
+    return result;
+  }, [dispatch, selectedDiagnosis, createDiagnosisNote, openViewNotes, loadDiagnosisNotes]);
+
+  // Enhanced edit/delete note handlers that reload notes
+  const handleEditNote = useCallback(async (diagnosisId, noteId, content) => {
+    const result = await editDiagnosisNote(diagnosisId, noteId, content);
+    if (updateDiagnosisNote.fulfilled.match(result)) {
+      // Reload notes if viewing notes dialog is open
+      if (selectedDiagnosis && selectedDiagnosis._id === diagnosisId) {
+        loadDiagnosisNotes(diagnosisId);
+      }
+    }
+    return result;
+  }, [editDiagnosisNote, selectedDiagnosis, loadDiagnosisNotes]);
+
+  const handleDeleteNote = useCallback(async (diagnosisId, noteId) => {
+    const result = await removeDiagnosisNote(diagnosisId, noteId);
+    if (deleteDiagnosisNote.fulfilled.match(result)) {
+      // Reload notes if viewing notes dialog is open
+      if (selectedDiagnosis && selectedDiagnosis._id === diagnosisId) {
+        loadDiagnosisNotes(diagnosisId);
+      }
+    }
+    return result;
+  }, [removeDiagnosisNote, selectedDiagnosis, loadDiagnosisNotes]);
+
   const symptoms = diagnosisState.symptoms;
   const notes = diagnosisState.notes;
   const notesLoading = diagnosisState.notesLoading;
+  const notesError = diagnosisState.notesError;
 
   const pagination = diagnosisState.pagination;
 
@@ -218,7 +290,20 @@ const useDiagnosis = () => {
     editDiagnosisNote,
     removeDiagnosisNote,
     notes,
-    notesLoading
+    notesLoading,
+    notesError,
+    // note modal handlers
+    handleAddNote,
+    handleViewNotes,
+    handleCreateNote,
+    handleEditNote,
+    handleDeleteNote,
+    handleCloseAddNote,
+    handleCloseViewNotes,
+    // note modal state
+    openAddNote,
+    openViewNotes,
+    selectedDiagnosis
   };
 };
 

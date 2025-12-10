@@ -179,6 +179,12 @@ const initialState = {
     diagnoses: [],
     currentDiagnosis: null,
     notes: [],
+    notesLoading: false,
+    notesError: null,
+    // Modal state
+    openAddNote: false,
+    openViewNotes: false,
+    selectedDiagnosis: null,
     pagination: {
         page: 1,
         limit: 5,
@@ -224,6 +230,23 @@ const diagnosisSlice = createSlice({
         clearCurrentDiagnosis: (state) => {
             state.currentDiagnosis = null;
             state.notes = [];
+        },
+        // Modal state actions
+        setOpenAddNote: (state, action) => {
+            state.openAddNote = action.payload;
+        },
+        setOpenViewNotes: (state, action) => {
+            state.openViewNotes = action.payload;
+        },
+        setSelectedDiagnosis: (state, action) => {
+            state.selectedDiagnosis = action.payload;
+        },
+        closeNoteModals: (state) => {
+            state.openAddNote = false;
+            state.openViewNotes = false;
+            state.selectedDiagnosis = null;
+            // Optionally clear notes when closing modals
+            // state.notes = [];
         }
     },
     extraReducers: (builder) => {
@@ -413,7 +436,11 @@ export const {
     setSuccess,
     clearMessages,
     setFilters,
-    clearCurrentDiagnosis
+    clearCurrentDiagnosis,
+    setOpenAddNote,
+    setOpenViewNotes,
+    setSelectedDiagnosis,
+    closeNoteModals
 } = diagnosisSlice.actions;
 
 export default diagnosisSlice.reducer;

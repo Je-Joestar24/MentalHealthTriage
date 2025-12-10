@@ -141,6 +141,17 @@ export const updatePsychologist = asyncWrapper(async (req, res) => {
     });
   }
 
+  // Normalize/trim inputs
+  if (updateData.email) {
+    updateData.email = updateData.email.toLowerCase().trim();
+  }
+  if (updateData.name) {
+    updateData.name = updateData.name.trim();
+  }
+  if (updateData.password) {
+    updateData.password = updateData.password.trim();
+  }
+
   try {
     const psychologist = await individualService.updatePsychologist(id, updateData);
 
