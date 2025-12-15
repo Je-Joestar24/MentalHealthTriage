@@ -170,6 +170,41 @@ export const getSubscription = async (subscriptionId) => {
 };
 
 /**
+ * Update subscription item quantity (e.g., add seats) with proration so billing date stays the same.
+ * Returns the refreshed subscription.
+ * @param {string} subscriptionId - Stripe subscription ID
+ * @param {number} quantity - New total quantity (e.g., total seats)
+ * @returns {Promise<Stripe.Subscription>}
+ */
+export const updateSubscriptionQuantity = async (subscriptionId, quantity) => {
+  try {
+    if (!subscriptionId) throw new Error('Subscription ID is required');
+    if (!quantity || quantity < 1) throw new Error('Quantity must be at least 1');
+
+    // Fetch subscription to locate the item to update
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    const subscriptionItem = subscription.items?.data?.[0];
+
+    if (!subscriptionItem?.id) {
+      throw new Error('Subscription item not found for this subscription');
+    }
+
+    // Update quantity with proration; Stripe will invoice prorated amount immediately
+    await stripe.subscriptionItems.update(subscriptionItem.id, {
+      quantity,
+      proration_behavior: 'always_invoice',
+    });
+
+    // Return refreshed subscription reflecting the new quantity
+    const updatedSubscription = await stripe.subscriptions.retrieve(subscriptionId);
+    return updatedSubscription;
+  } catch (error) {
+    console.error('Error updating subscription quantity:', error);
+    throw new Error(`Failed to update subscription quantity: ${error.message}`);
+  }
+};
+
+/**
  * Update user with Stripe customer ID
  * @param {string} userId - User ID
  * @param {string} customerId - Stripe customer ID

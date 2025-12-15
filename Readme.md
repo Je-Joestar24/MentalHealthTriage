@@ -85,6 +85,7 @@ Ultimately, the system contributes to improving mental health service delivery, 
 - **Analytics Dashboard** - Performance metrics and insights
 - **Multi-tenant Architecture** - Support for individual and organizational accounts
 - **Secure Authentication** - Role-based access control
+- **Seat Upgrades** - Organizations can add seats mid-cycle with prorated billing; seats activate immediately while billing dates stay unchanged.
 
 ### User Experience
 - **Responsive Design** - Works seamlessly across all devices

@@ -16,6 +16,7 @@ import triageRouter from './routes/triage.routes.js';
 import companyDetailsRouter from './routes/companydetails.routes.js';
 import psychologistsRouter from './routes/psychologists.routes.js';
 import stripeRouter from './routes/stripe.routes.js';
+import subscriptionRouter from './routes/subscription.routes.js';
 import { errorHandler } from './middleware/error.handler.js';
 
 const app = express();
@@ -65,6 +66,7 @@ app.use('/api/psychologist/patients', patientsRouter);
 app.use('/api/psychologist/triage', triageRouter);
 app.use('/api/company', companyDetailsRouter);
 app.use('/api/company/psychologists', psychologistsRouter);
+app.use('/api/subscription', subscriptionRouter);
 
 // health check
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
