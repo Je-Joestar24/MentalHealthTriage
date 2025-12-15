@@ -11,17 +11,43 @@ import {
     Select,
     MenuItem,
     FormControl,
-    InputLabel
+    InputLabel,
+    IconButton,
+    Tooltip,
+    Dialog,
+    DialogTitle,
+    DialogContent
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
+import NotesOutlinedIcon from '@mui/icons-material/NotesOutlined';
+import NoteAddOutlinedIcon from '@mui/icons-material/NoteAddOutlined';
+import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
 import useTriage from '../../../hooks/triageHook';
+import useDiagnosis from '../../../hooks/diagnosisHook';
+import DiagnosisNotesList from '../../admin/diagnosis/DiagnosisNotesList';
+import DiagnosisAddNoteModal from '../../admin/diagnosis/DiagnosisAddNoteModal';
 
 const LIMIT_OPTIONS = [2, 5, 10, 20, 50];
 
 export default function TriageRightPanel() {
     const { matchedDiagnoses, matchCount, matchPagination, matchQuery, loading, matchDiagnoses: matchDiagnosesAction } = useTriage();
+    const {
+        notes,
+        notesLoading,
+        notesError,
+        handleAddNote,
+        handleViewNotes,
+        handleCreateNote,
+        handleEditNote,
+        handleDeleteNote,
+        handleCloseAddNote,
+        handleCloseViewNotes,
+        openAddNote,
+        openViewNotes,
+        selectedDiagnosis
+    } = useDiagnosis();
     const [limit, setLimit] = useState(2);
 
     // Sync limit with pagination when it changes
@@ -197,16 +223,57 @@ export default function TriageRightPanel() {
                                                 {diagnosis.icd10Code && ` / ${diagnosis.icd10Code}`}
                                             </Typography>
                                         </Box>
-                                        <Chip
-                                            label={`${diagnosis.matchCount || 0} symptom${(diagnosis.matchCount || 0) !== 1 ? 's' : ''} matched`}
-                                            size="small"
-                                            color={diagnosis.matchCount > 0 ? 'primary' : 'default'}
-                                            sx={{
-                                                fontSize: '0.7rem',
-                                                height: 22,
-                                                ml: 1
-                                            }}
-                                        />
+                                        <Stack direction="row" spacing={0.5} alignItems="center">
+                                            <Chip
+                                                label={`${diagnosis.matchCount || 0} symptom${(diagnosis.matchCount || 0) !== 1 ? 's' : ''} matched`}
+                                                size="small"
+                                                color={diagnosis.matchCount > 0 ? 'primary' : 'default'}
+                                                sx={{
+                                                    fontSize: '0.7rem',
+                                                    height: 22,
+                                                    ml: 1
+                                                }}
+                                            />
+                                            <Tooltip title="View notes" arrow>
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        e.preventDefault();
+                                                        handleViewNotes(diagnosis);
+                                                    }}
+                                                    sx={{
+                                                        color: 'primary.main',
+                                                        ml: 0.5,
+                                                        '&:hover': {
+                                                            backgroundColor: 'primary.light',
+                                                            color: 'white'
+                                                        }
+                                                    }}
+                                                >
+                                                    <NotesOutlinedIcon sx={{ fontSize: 18 }} />
+                                                </IconButton>
+                                            </Tooltip>
+                                            <Tooltip title="Add note" arrow>
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        e.preventDefault();
+                                                        handleAddNote(diagnosis);
+                                                    }}
+                                                    sx={{
+                                                        color: 'primary.main',
+                                                        '&:hover': {
+                                                            backgroundColor: 'primary.light',
+                                                            color: 'white'
+                                                        }
+                                                    }}
+                                                >
+                                                    <NoteAddOutlinedIcon sx={{ fontSize: 18 }} />
+                                                </IconButton>
+                                            </Tooltip>
+                                        </Stack>
                                     </Stack>
 
                                     <Divider sx={{ my: 0.5 }} />
@@ -386,6 +453,55 @@ export default function TriageRightPanel() {
                     </Stack>
                 </Stack>
             </Box>
+
+            {/* Notes Modals */}
+            <DiagnosisAddNoteModal
+                open={openAddNote}
+                onClose={handleCloseAddNote}
+                onAdd={handleCreateNote}
+                loading={notesLoading}
+            />
+
+            <Dialog
+                open={openViewNotes}
+                onClose={handleCloseViewNotes}
+                maxWidth="md"
+                fullWidth
+                PaperProps={{
+                    sx: {
+                        borderRadius: 2,
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                    },
+                }}
+            >
+                <DialogTitle sx={{ pb: 1 }}>
+                    <Stack direction="row" alignItems="center" justifyContent="space-between">
+                        <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
+                            {selectedDiagnosis?.name || 'Diagnosis'} - Notes
+                        </Typography>
+                        <IconButton
+                            onClick={handleCloseViewNotes}
+                            size="small"
+                            sx={{ color: 'text.secondary' }}
+                            aria-label="Close"
+                        >
+                            <CloseOutlinedIcon />
+                        </IconButton>
+                    </Stack>
+                </DialogTitle>
+                <DialogContent sx={{ pt: 2 }}>
+                    {selectedDiagnosis && (
+                        <DiagnosisNotesList
+                            diagnosisId={selectedDiagnosis._id}
+                            notes={notes}
+                            loading={notesLoading}
+                            error={notesError}
+                            onEditNote={handleEditNote}
+                            onDeleteNote={handleDeleteNote}
+                        />
+                    )}
+                </DialogContent>
+            </Dialog>
         </Box >
     );
 }
