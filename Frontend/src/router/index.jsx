@@ -22,6 +22,7 @@ import CompanyDetails from "../pages/OrgAdmin/CompanyDetails";
 import CompanyDiagnosisLIst from "../pages/OrgAdmin/CompanyDiagnosisList";
 import CompanyPsychologistList from "../pages/OrgAdmin/CompanyPsychologistList";
 import CompanyPatients from "../pages/OrgAdmin/CompanyPatients";
+import CompanySubscription from "../pages/OrgAdmin/CompanySubscription";
 
 const router = createBrowserRouter([
     {
@@ -138,6 +139,13 @@ const router = createBrowserRouter([
                         path: "patients", element: (
                             <RequireAuth roles={["company_admin"]}>
                                 <CompanyPatients />
+                            </RequireAuth>
+                        )
+                    },
+                    {
+                        path: "subscription", element: (
+                            <RequireAuth roles={["company_admin"]}>
+                                <CompanySubscription />
                             </RequireAuth>
                         )
                     },

@@ -21,6 +21,7 @@ import PsychologyAltOutlinedIcon from '@mui/icons-material/PsychologyAltOutlined
 import MonitorHeartOutlinedIcon from '@mui/icons-material/MonitorHeartOutlined';
 import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
 import GroupOutlinedIcon from '@mui/icons-material/GroupOutlined';
+import CardMembershipOutlinedIcon from '@mui/icons-material/CardMembershipOutlined';
 import useUser from '../../hooks/userHook';
 
 const NavItem = ({ to, icon: Icon, label, onClick }) => (
@@ -67,6 +68,7 @@ const Sidebar = ({ mobileOpen, onMobileClose }) => {
     { to: "/company/diagnosis/list", icon: MedicalInformationOutlinedIcon, label: "Diagnosis List" },
     { to: "/company/psychologist/list", icon: PsychologyAltOutlinedIcon, label: "Psychologists List" },
     { to: "/company/patients", icon: GroupsOutlinedIcon, label: "Patients" },
+    { to: "/company/subscription", icon: CardMembershipOutlinedIcon, label: "Subscription" },
   ];
 
   
