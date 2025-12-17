@@ -39,6 +39,10 @@ const OrganizationSchema = new Schema(
     },
     is_paid: { type: Boolean, default: false, index: true },
     seats_limit: { type: Number, default: 4, min: 4 }, // Minimum 4 seats for organizations
+    // Subscription cancellation management
+    cancel_at_period_end: { type: Boolean, default: false, index: true },
+    cancellationRequestedAt: { type: Date, default: null },
+    cancellationReason: { type: String, default: '' },
   },
   { timestamps: true }
 );

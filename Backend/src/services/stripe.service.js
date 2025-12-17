@@ -259,7 +259,16 @@ export const updateUserSubscription = async (userId, subscriptionData, forceActi
       stripe_subscription_id: subscriptionData.id,
       subscription_status: subscriptionStatus,
       is_paid: subscriptionStatus === 'active',
+      // Sync cancellation status from Stripe
+      cancel_at_period_end: subscriptionData.cancel_at_period_end || false,
     };
+
+    // If subscription is canceled, clear cancellation request fields
+    if (subscriptionStatus === 'canceled') {
+      updateData.cancel_at_period_end = false;
+      updateData.cancellationRequestedAt = null;
+      updateData.cancellationReason = '';
+    }
 
     if (subscriptionData.current_period_start) {
       updateData.subscriptionStartDate = new Date(subscriptionData.current_period_start * 1000);
@@ -301,7 +310,16 @@ export const updateOrganizationSubscription = async (organizationId, subscriptio
       stripe_subscription_id: subscriptionData.id,
       subscription_status: subscriptionStatus,
       is_paid: subscriptionStatus === 'active',
+      // Sync cancellation status from Stripe
+      cancel_at_period_end: subscriptionData.cancel_at_period_end || false,
     };
+
+    // If subscription is canceled, clear cancellation request fields
+    if (subscriptionStatus === 'canceled') {
+      updateData.cancel_at_period_end = false;
+      updateData.cancellationRequestedAt = null;
+      updateData.cancellationReason = '';
+    }
 
     if (subscriptionData.current_period_start) {
       updateData.subscriptionStartDate = new Date(subscriptionData.current_period_start * 1000);
@@ -322,6 +340,54 @@ export const updateOrganizationSubscription = async (organizationId, subscriptio
   } catch (error) {
     console.error('Error updating organization subscription:', error);
     throw new Error(`Failed to update organization subscription: ${error.message}`);
+  }
+};
+
+/**
+ * Schedule subscription cancellation at period end
+ * @param {string} subscriptionId - Stripe subscription ID
+ * @returns {Promise<Stripe.Subscription>} Updated subscription
+ */
+export const scheduleSubscriptionCancellation = async (subscriptionId) => {
+  try {
+    if (!subscriptionId) {
+      throw new Error('Subscription ID is required');
+    }
+
+    // Update Stripe subscription to cancel at period end
+    const subscription = await stripe.subscriptions.update(subscriptionId, {
+      cancel_at_period_end: true,
+    });
+
+    console.log(`✅ Subscription ${subscriptionId} scheduled for cancellation at period end`);
+    return subscription;
+  } catch (error) {
+    console.error('Error scheduling subscription cancellation:', error);
+    throw new Error(`Failed to schedule cancellation: ${error.message}`);
+  }
+};
+
+/**
+ * Undo scheduled subscription cancellation (keep subscription active)
+ * @param {string} subscriptionId - Stripe subscription ID
+ * @returns {Promise<Stripe.Subscription>} Updated subscription
+ */
+export const undoSubscriptionCancellation = async (subscriptionId) => {
+  try {
+    if (!subscriptionId) {
+      throw new Error('Subscription ID is required');
+    }
+
+    // Update Stripe subscription to NOT cancel at period end
+    const subscription = await stripe.subscriptions.update(subscriptionId, {
+      cancel_at_period_end: false,
+    });
+
+    console.log(`✅ Subscription ${subscriptionId} cancellation undone - will continue after period end`);
+    return subscription;
+  } catch (error) {
+    console.error('Error undoing subscription cancellation:', error);
+    throw new Error(`Failed to undo cancellation: ${error.message}`);
   }
 };
 

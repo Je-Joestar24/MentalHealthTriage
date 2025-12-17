@@ -35,6 +35,10 @@ const UserSchema = new Schema(
       default: 'incomplete',
       index: true
     },
+    // Subscription cancellation management
+    cancel_at_period_end: { type: Boolean, default: false, index: true },
+    cancellationRequestedAt: { type: Date, default: null },
+    cancellationReason: { type: String, default: '' },
     account_type: {
       type: String,
       enum: ['individual', 'organization'],

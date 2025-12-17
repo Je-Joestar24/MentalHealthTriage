@@ -23,6 +23,19 @@ const stripe = new Stripe(process.env.STRIPE_TEST_SECRET_KEY || '', {
 /**
  * Handle Stripe webhook events
  * POST /api/stripe/webhook
+ * 
+ * Handles the following events:
+ * - checkout.session.completed: Payment completed, activate subscription
+ * - customer.subscription.created: New subscription created
+ * - customer.subscription.updated: Subscription updated (includes cancel_at_period_end changes)
+ * - customer.subscription.deleted: Subscription canceled at period end
+ * - invoice.payment_succeeded: Payment successful, renew subscription
+ * - invoice.payment_failed: Payment failed, mark as past_due
+ * 
+ * Cancellation Flow:
+ * 1. User schedules cancellation → cancel_at_period_end = true (handled by subscription.updated)
+ * 2. User cancels cancellation → cancel_at_period_end = false (handled by subscription.updated)
+ * 3. Period ends with cancel_at_period_end = true → subscription.deleted event (handled automatically)
  */
 export async function handleStripeWebhook(req, res, next) {
   const sig = req.headers['stripe-signature'];
@@ -151,11 +164,17 @@ async function handleCheckoutSessionCompleted(session) {
 
 /**
  * Handle subscription created/updated events
+ * This handles:
+ * - Subscription status changes (active, canceled, etc.)
+ * - Cancellation scheduling (cancel_at_period_end changes)
+ * - Period end dates updates
  */
 async function handleSubscriptionUpdate(subscription) {
   try {
     const { metadata } = subscription;
     const accountType = metadata?.accountType;
+
+    console.log(`📋 Processing subscription update: ${subscription.id}, status: ${subscription.status}, cancel_at_period_end: ${subscription.cancel_at_period_end}`);
 
     if (accountType === 'individual') {
       const userId = metadata?.userId;
@@ -163,7 +182,15 @@ async function handleSubscriptionUpdate(subscription) {
         // Force active if subscription status is active or trialing
         const forceActive = subscription.status === 'active' || subscription.status === 'trialing';
         await updateUserSubscription(userId, subscription, forceActive);
-        console.log(`✅ Individual subscription updated for user: ${userId}`);
+        
+        // Log cancellation status
+        if (subscription.cancel_at_period_end) {
+          console.log(`⚠️ Individual subscription scheduled for cancellation at period end for user: ${userId}`);
+        } else if (subscription.status === 'canceled') {
+          console.log(`❌ Individual subscription canceled for user: ${userId}`);
+        } else {
+          console.log(`✅ Individual subscription updated for user: ${userId}`);
+        }
       }
     } else if (accountType === 'organization') {
       const organizationId = metadata?.organizationId;
@@ -172,9 +199,17 @@ async function handleSubscriptionUpdate(subscription) {
         // Force active if subscription status is active or trialing
         const forceActive = subscription.status === 'active' || subscription.status === 'trialing';
         await updateOrganizationSubscription(organizationId, subscription, seats, forceActive);
-        console.log(`✅ Organization subscription updated for org: ${organizationId}`);
         
-        // Sync admin user subscription fields from organization
+        // Log cancellation status
+        if (subscription.cancel_at_period_end) {
+          console.log(`⚠️ Organization subscription scheduled for cancellation at period end for org: ${organizationId}`);
+        } else if (subscription.status === 'canceled') {
+          console.log(`❌ Organization subscription canceled for org: ${organizationId}`);
+        } else {
+          console.log(`✅ Organization subscription updated for org: ${organizationId}`);
+        }
+        
+        // Sync admin user subscription fields from organization (including cancellation status)
         const organization = await Organization.findById(organizationId);
         if (organization && organization.admin) {
           await User.findByIdAndUpdate(organization.admin, {
@@ -183,6 +218,12 @@ async function handleSubscriptionUpdate(subscription) {
             stripe_subscription_id: organization.stripe_subscription_id,
             subscriptionStartDate: organization.subscriptionStartDate,
             subscriptionEndDate: organization.subscriptionEndDate,
+            cancel_at_period_end: organization.cancel_at_period_end,
+            // Clear cancellation fields if subscription is canceled
+            ...(organization.subscription_status === 'canceled' ? {
+              cancellationRequestedAt: null,
+              cancellationReason: '',
+            } : {}),
           });
           console.log(`✅ Admin user subscription synced from organization`);
         }
@@ -196,11 +237,15 @@ async function handleSubscriptionUpdate(subscription) {
 
 /**
  * Handle subscription deleted event
+ * This is triggered when a subscription is canceled at period end
+ * Stripe automatically deletes the subscription when cancel_at_period_end is true and period ends
  */
 async function handleSubscriptionDeleted(subscription) {
   try {
     const { metadata } = subscription;
     const accountType = metadata?.accountType;
+
+    console.log(`🗑️ Processing subscription deletion: ${subscription.id}, accountType: ${accountType}`);
 
     if (accountType === 'individual') {
       const userId = metadata?.userId;
@@ -208,8 +253,11 @@ async function handleSubscriptionDeleted(subscription) {
         await User.findByIdAndUpdate(userId, {
           subscription_status: 'canceled',
           is_paid: false,
+          cancel_at_period_end: false, // Clear cancellation flag
+          cancellationRequestedAt: null, // Clear cancellation request
+          cancellationReason: '', // Clear cancellation reason
         });
-        console.log(`✅ Individual subscription canceled for user: ${userId}`);
+        console.log(`❌ Individual subscription canceled and deleted for user: ${userId}`);
       }
     } else if (accountType === 'organization') {
       const organizationId = metadata?.organizationId;
@@ -217,8 +265,24 @@ async function handleSubscriptionDeleted(subscription) {
         await Organization.findByIdAndUpdate(organizationId, {
           subscription_status: 'canceled',
           is_paid: false,
+          cancel_at_period_end: false, // Clear cancellation flag
+          cancellationRequestedAt: null, // Clear cancellation request
+          cancellationReason: '', // Clear cancellation reason
         });
-        console.log(`✅ Organization subscription canceled for org: ${organizationId}`);
+        console.log(`❌ Organization subscription canceled and deleted for org: ${organizationId}`);
+        
+        // Also update admin user
+        const organization = await Organization.findById(organizationId);
+        if (organization && organization.admin) {
+          await User.findByIdAndUpdate(organization.admin, {
+            subscription_status: 'canceled',
+            is_paid: false,
+            cancel_at_period_end: false,
+            cancellationRequestedAt: null,
+            cancellationReason: '',
+          });
+          console.log(`✅ Admin user subscription synced to canceled`);
+        }
       }
     }
   } catch (error) {
