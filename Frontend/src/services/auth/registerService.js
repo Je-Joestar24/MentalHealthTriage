@@ -85,18 +85,22 @@ export async function createCheckoutSession(sessionData) {
 
 /**
  * Verify Stripe checkout session after payment
+ * This endpoint is CRITICAL - it updates the subscription status to 'active' and sets is_paid to true
  * @param {string} sessionId - Stripe checkout session ID
  * @returns {Promise<{success: boolean, data?: Object, error?: string}>}
  */
 export async function verifyCheckoutSession(sessionId) {
     try {
+        console.log('📞 Calling GET /api/stripe/verify-session/' + sessionId);
         const { data } = await api.get(`/api/stripe/verify-session/${sessionId}`);
+        console.log('✅ Verification response received:', data);
         return {
             success: true,
             data: data.data,
             message: data.message,
         };
     } catch (error) {
+        console.error('❌ Verification error:', error);
         const message = error?.response?.data?.error || error.message || 'Failed to verify checkout session';
         return {
             success: false,

@@ -240,14 +240,30 @@ export const updateOrganizationStripeCustomer = async (organizationId, customerI
  * Update user subscription details after successful payment
  * @param {string} userId - User ID
  * @param {Object} subscriptionData - Subscription data from Stripe
+ * @param {boolean} forceActive - Force subscription to active status (e.g., when payment is confirmed)
  */
-export const updateUserSubscription = async (userId, subscriptionData) => {
+export const updateUserSubscription = async (userId, subscriptionData, forceActive = false) => {
   try {
+    // Determine subscription status
+    // If forceActive is true or subscription is active/trialing, set to active
+    // Otherwise use the subscription status from Stripe
+    let subscriptionStatus = subscriptionData.status;
+    if (forceActive || subscriptionData.status === 'active' || subscriptionData.status === 'trialing') {
+      subscriptionStatus = 'active';
+    } else if (subscriptionData.status === 'incomplete' && forceActive) {
+      // If payment is confirmed but subscription is incomplete, set to active
+      subscriptionStatus = 'active';
+    }
+
     const updateData = {
       stripe_subscription_id: subscriptionData.id,
-      subscription_status: subscriptionData.status,
-      is_paid: subscriptionData.status === 'active',
+      subscription_status: subscriptionStatus,
+      is_paid: subscriptionStatus === 'active',
     };
+
+    if (subscriptionData.current_period_start) {
+      updateData.subscriptionStartDate = new Date(subscriptionData.current_period_start * 1000);
+    }
 
     if (subscriptionData.current_period_end) {
       // Reuse existing subscriptionEndDate field
@@ -266,14 +282,30 @@ export const updateUserSubscription = async (userId, subscriptionData) => {
  * @param {string} organizationId - Organization ID
  * @param {Object} subscriptionData - Subscription data from Stripe
  * @param {number} seats - Number of seats from subscription metadata
+ * @param {boolean} forceActive - Force subscription to active status (e.g., when payment is confirmed)
  */
-export const updateOrganizationSubscription = async (organizationId, subscriptionData, seats = null) => {
+export const updateOrganizationSubscription = async (organizationId, subscriptionData, seats = null, forceActive = false) => {
   try {
+    // Determine subscription status
+    // If forceActive is true or subscription is active/trialing, set to active
+    // Otherwise use the subscription status from Stripe
+    let subscriptionStatus = subscriptionData.status;
+    if (forceActive || subscriptionData.status === 'active' || subscriptionData.status === 'trialing') {
+      subscriptionStatus = 'active';
+    } else if (subscriptionData.status === 'incomplete' && forceActive) {
+      // If payment is confirmed but subscription is incomplete, set to active
+      subscriptionStatus = 'active';
+    }
+
     const updateData = {
       stripe_subscription_id: subscriptionData.id,
-      subscription_status: subscriptionData.status,
-      is_paid: subscriptionData.status === 'active',
+      subscription_status: subscriptionStatus,
+      is_paid: subscriptionStatus === 'active',
     };
+
+    if (subscriptionData.current_period_start) {
+      updateData.subscriptionStartDate = new Date(subscriptionData.current_period_start * 1000);
+    }
 
     if (subscriptionData.current_period_end) {
       // Reuse existing subscriptionEndDate field

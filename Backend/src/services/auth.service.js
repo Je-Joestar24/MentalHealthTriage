@@ -28,8 +28,25 @@ export const checkEmailAvailability = async (email) => {
     };
   }
 
+  // Check payment status based on account type
+  let isPaid = false;
+  let subscriptionStatus = 'incomplete';
+  
+  if (existingUser.account_type === 'organization' && existingUser.organization) {
+    // For organization accounts, check organization subscription
+    const organization = await Organization.findById(existingUser.organization);
+    if (organization) {
+      isPaid = organization.is_paid;
+      subscriptionStatus = organization.subscription_status;
+    }
+  } else {
+    // For individual accounts, check user subscription
+    isPaid = existingUser.is_paid;
+    subscriptionStatus = existingUser.subscription_status;
+  }
+
   // If user exists but hasn't paid
-  if (!existingUser.is_paid || existingUser.subscription_status === 'incomplete') {
+  if (!isPaid || subscriptionStatus === 'incomplete') {
     return {
       status: 'unpaid_existing',
       available: false,

@@ -34,20 +34,23 @@ export const requireActiveSubscription = async (req, res, next) => {
         success: false,
         error: 'Organization subscription has expired',
         data: {
-          subscriptionStatus: organization.subscriptionStatus,
+          subscription_status: organization.subscription_status, // Stripe status (source of truth)
+          subscriptionStatus: organization.subscription_status === 'active' && organization.is_paid ? 'active' : 'inactive', // Legacy field for frontend
           subscriptionEndDate: organization.subscriptionEndDate,
           daysRemaining: organization.daysRemaining
         }
       });
     }
 
-    // Check if subscription is inactive
-    if (organization.subscriptionStatus === 'inactive') {
+    // Check if subscription is not active or not paid (use subscription_status from Stripe)
+    if (!organization.is_paid || organization.subscription_status !== 'active') {
       return res.status(403).json({
         success: false,
-        error: 'Organization subscription is inactive',
+        error: 'Organization subscription is not active',
         data: {
-          subscriptionStatus: organization.subscriptionStatus,
+          subscription_status: organization.subscription_status, // Stripe status (source of truth)
+          subscriptionStatus: organization.subscription_status === 'active' && organization.is_paid ? 'active' : 'inactive', // Legacy field for frontend
+          is_paid: organization.is_paid,
           subscriptionEndDate: organization.subscriptionEndDate
         }
       });
@@ -62,6 +65,8 @@ export const requireActiveSubscription = async (req, res, next) => {
 };
 
 // Middleware to check if user has active subscription
+// For organization users, checks organization subscription
+// For individual users, checks user subscription
 export const requireUserActiveSubscription = async (req, res, next) => {
   try {
     if (!req.user) {
@@ -76,7 +81,59 @@ export const requireUserActiveSubscription = async (req, res, next) => {
       return next();
     }
 
-    // Check if user has subscription end date
+    // For organization users, check organization subscription
+    if (req.user.organization && req.user.account_type === 'organization') {
+      const organization = await Organization.findById(req.user.organization);
+      
+      if (!organization) {
+        return res.status(404).json({
+          success: false,
+          error: 'Organization not found'
+        });
+      }
+
+      // Check if organization subscription is active and paid
+      if (!organization.is_paid || organization.subscription_status !== 'active') {
+        return res.status(403).json({
+          success: false,
+          error: 'Organization subscription is not active',
+          data: {
+            subscription_status: organization.subscription_status,
+            is_paid: organization.is_paid,
+            subscriptionEndDate: organization.subscriptionEndDate
+          }
+        });
+      }
+
+      // Check if subscription is expired
+      if (organization.isSubscriptionExpired) {
+        return res.status(403).json({
+          success: false,
+          error: 'Organization subscription has expired',
+          data: {
+            subscriptionEndDate: organization.subscriptionEndDate,
+            daysRemaining: organization.daysRemaining
+          }
+        });
+      }
+
+      return next();
+    }
+
+    // For individual users, check user subscription
+    if (!req.user.is_paid || req.user.subscription_status !== 'active') {
+      return res.status(403).json({
+        success: false,
+        error: 'User subscription is not active',
+        data: {
+          subscription_status: req.user.subscription_status,
+          is_paid: req.user.is_paid,
+          subscriptionEndDate: req.user.subscriptionEndDate
+        }
+      });
+    }
+
+    // Check if user subscription is expired
     if (req.user.subscriptionEndDate) {
       if (req.user.isSubscriptionExpired) {
         return res.status(403).json({
@@ -97,23 +154,42 @@ export const requireUserActiveSubscription = async (req, res, next) => {
 };
 
 // Middleware to check subscription status and add info to response
+// For organization users, uses organization subscription data
+// For individual users, uses user subscription data
 export const addSubscriptionInfo = async (req, res, next) => {
   try {
-    if (req.user?.organization) {
+    if (req.user?.organization && req.user.account_type === 'organization') {
+      // For organization users, get organization subscription info
       const organization = await Organization.findById(req.user.organization);
       
       if (organization) {
-        // Add subscription info to response locals
-        res.locals.subscriptionInfo = {
-          organizationId: organization._id,
-          organizationName: organization.name,
-          subscriptionStatus: organization.subscriptionStatus,
-          subscriptionStartDate: organization.subscriptionStartDate,
-          subscriptionEndDate: organization.subscriptionEndDate,
-          isSubscriptionExpired: organization.isSubscriptionExpired,
-          daysRemaining: organization.daysRemaining
-        };
+        // Add subscription info to response locals (using subscription_status, not subscriptionStatus)
+         res.locals.subscriptionInfo = {
+           organizationId: organization._id,
+           organizationName: organization.name,
+           subscription_status: organization.subscription_status, // Stripe status (source of truth)
+           subscriptionStatus: organization.subscription_status === 'active' && organization.is_paid ? 'active' : 'inactive', // Legacy field mapped from subscription_status
+           is_paid: organization.is_paid,
+           stripe_subscription_id: organization.stripe_subscription_id,
+           subscriptionStartDate: organization.subscriptionStartDate,
+           subscriptionEndDate: organization.subscriptionEndDate,
+           isSubscriptionExpired: organization.isSubscriptionExpired,
+           daysRemaining: organization.daysRemaining,
+           psychologistSeats: organization.psychologistSeats,
+           seats_limit: organization.seats_limit
+         };
       }
+    } else if (req.user && !req.user.organization) {
+      // For individual users, use user subscription info
+      res.locals.subscriptionInfo = {
+        subscription_status: req.user.subscription_status,
+        is_paid: req.user.is_paid,
+        stripe_subscription_id: req.user.stripe_subscription_id,
+        subscriptionStartDate: req.user.subscriptionStartDate,
+        subscriptionEndDate: req.user.subscriptionEndDate,
+        isSubscriptionExpired: req.user.isSubscriptionExpired,
+        daysRemaining: req.user.daysRemaining
+      };
     }
 
     next();

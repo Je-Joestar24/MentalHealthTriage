@@ -51,11 +51,13 @@ OrganizationSchema.virtual('isSubscriptionExpired').get(function() {
 });
 
 // Virtual field to get the effective status (includes automatic expiration)
+// Uses subscription_status from Stripe, not the old subscriptionStatus field
 OrganizationSchema.virtual('effectiveStatus').get(function() {
   if (this.isSubscriptionExpired) {
     return 'expired';
   }
-  return this.subscriptionStatus;
+  // Use Stripe subscription_status as source of truth
+  return (this.subscription_status === 'active' && this.is_paid) ? 'active' : this.subscription_status;
 });
 
 // Virtual field to get days remaining in subscription
@@ -71,6 +73,16 @@ OrganizationSchema.set('toJSON', {
   virtuals: true,
   transform: (doc, ret) => {
     delete ret.__v;
+    // Map subscription_status (Stripe) to subscriptionStatus for frontend compatibility
+    // subscription_status is the source of truth from Stripe
+    if (ret.subscription_status) {
+      // Map Stripe status to legacy status for frontend
+      if (ret.subscription_status === 'active' && ret.is_paid) {
+        ret.subscriptionStatus = 'active';
+      } else {
+        ret.subscriptionStatus = 'inactive';
+      }
+    }
     return ret;
   },
 });

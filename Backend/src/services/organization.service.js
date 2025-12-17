@@ -24,8 +24,16 @@ export const getAllOrganizations = async (queryParams) => {
     if (subscriptionStatus === 'expired') {
       // For expired status, filter by organizations past their end date
       filter.subscriptionEndDate = { $lt: new Date() };
-    } else {
-      filter.subscriptionStatus = subscriptionStatus;
+    } else if (subscriptionStatus === 'active') {
+      // Map 'active' to Stripe subscription_status 'active' and is_paid true
+      filter.subscription_status = 'active';
+      filter.is_paid = true;
+    } else if (subscriptionStatus === 'inactive') {
+      // Map 'inactive' to any non-active subscription_status
+      filter.$or = [
+        { subscription_status: { $ne: 'active' } },
+        { is_paid: false }
+      ];
     }
   }
 
@@ -49,7 +57,7 @@ export const getAllOrganizations = async (queryParams) => {
   const transformedOrganizations = organizations.map(org => {
     // Calculate effective status (expired if past end date)
     const isExpired = org.subscriptionEndDate && new Date() > new Date(org.subscriptionEndDate);
-    const effectiveStatus = isExpired ? 'expired' : org.subscriptionStatus;
+    const effectiveStatus = isExpired ? 'expired' : (org.subscription_status === 'active' && org.is_paid ? 'active' : org.subscription_status);
     
     return {
       ...org,
@@ -91,7 +99,7 @@ export const getOrganizationById = async (organizationId) => {
 
   // Calculate effective status (expired if past end date)
   const isExpired = organization.subscriptionEndDate && new Date() > new Date(organization.subscriptionEndDate);
-  const effectiveStatus = isExpired ? 'expired' : organization.subscriptionStatus;
+  const effectiveStatus = isExpired ? 'expired' : (organization.subscription_status === 'active' && organization.is_paid ? 'active' : organization.subscription_status);
 
   return {
     ...organization,
@@ -100,6 +108,11 @@ export const getOrganizationById = async (organizationId) => {
   };
 };
 
+/**
+ * @deprecated This function updates the legacy subscriptionStatus field.
+ * Use Stripe webhooks and updateOrganizationSubscription instead.
+ * This is kept for backward compatibility but should not be used for Stripe-managed subscriptions.
+ */
 export const updateOrganizationStatus = async (organizationId, subscriptionStatus, subscriptionEndDate = null) => {
   const validStatuses = ['active', 'inactive'];
   
@@ -107,7 +120,18 @@ export const updateOrganizationStatus = async (organizationId, subscriptionStatu
     throw new Error('Invalid subscription status. Must be one of: active, inactive');
   }
 
-  const updateData = { subscriptionStatus };
+  // Map legacy status to Stripe subscription_status
+  const updateData = {};
+  if (subscriptionStatus === 'active') {
+    updateData.subscription_status = 'active';
+    updateData.is_paid = true;
+  } else {
+    updateData.subscription_status = 'incomplete';
+    updateData.is_paid = false;
+  }
+  
+  // Also update legacy field for backward compatibility (but it's not the source of truth)
+  updateData.subscriptionStatus = subscriptionStatus;
   
   // If updating to active and providing end date, update the subscription dates
   if (subscriptionStatus === 'active' && subscriptionEndDate) {
@@ -215,7 +239,7 @@ export const updateOrganization = async (organizationId, updateData) => {
 
   // Calculate effective status (expired if past end date)
   const isExpired = organization.subscriptionEndDate && new Date() > new Date(organization.subscriptionEndDate);
-  const effectiveStatus = isExpired ? 'expired' : organization.subscriptionStatus;
+  const effectiveStatus = isExpired ? 'expired' : (organization.subscription_status === 'active' && organization.is_paid ? 'active' : organization.subscription_status);
 
   return {
     ...organization,
@@ -248,7 +272,8 @@ export const getOrganizationStats = async (organizationId) => {
   return {
     organizationId,
     name: organization.name,
-    subscriptionStatus: organization.subscriptionStatus,
+      subscription_status: organization.subscription_status,
+      is_paid: organization.is_paid,
     subscriptionStartDate: organization.subscriptionStartDate,
     subscriptionEndDate: organization.subscriptionEndDate,
     isSubscriptionExpired: organization.isSubscriptionExpired,
@@ -267,16 +292,22 @@ export const checkAndUpdateExpiredSubscriptions = async () => {
   const now = new Date();
   
   // Find organizations with expired subscriptions that are still marked as active
+  // Use subscription_status (Stripe) as source of truth
   const expiredOrganizations = await Organization.find({
-    subscriptionStatus: 'active',
+    subscription_status: 'active',
+    is_paid: true,
     subscriptionEndDate: { $lt: now }
   });
 
   if (expiredOrganizations.length > 0) {
-    // Update all expired organizations
+    // Update all expired organizations - set subscription_status to 'past_due' or 'canceled'
+    // Don't update subscriptionStatus (legacy field) as it's no longer used
     await Organization.updateMany(
       { _id: { $in: expiredOrganizations.map(org => org._id) } },
-      { subscriptionStatus: 'expired' }
+      { 
+        subscription_status: 'past_due', // Stripe status for expired
+        is_paid: false 
+      }
     );
 
     console.log(`Updated ${expiredOrganizations.length} expired organizations`);
@@ -309,7 +340,9 @@ export const extendSubscription = async (organizationId, newEndDate) => {
   const updatedOrganization = await Organization.findByIdAndUpdate(
     organizationId,
     {
-      subscriptionStatus: 'active',
+      subscription_status: 'active', // Stripe status (source of truth)
+      is_paid: true,
+      subscriptionStatus: 'active', // Legacy field for backward compatibility
       subscriptionStartDate: now,
       subscriptionEndDate: endDate
     },

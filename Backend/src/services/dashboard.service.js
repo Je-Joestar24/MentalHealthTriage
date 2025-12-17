@@ -14,9 +14,10 @@ export const getDashboardStats = async () => {
   // Organizations counts
   const totalOrganizations = await Organization.countDocuments();
   
-  // Active organizations: subscriptionStatus = 'active' AND not expired
+  // Active organizations: subscription_status = 'active' AND is_paid = true AND not expired
   const activeOrganizations = await Organization.countDocuments({
-    subscriptionStatus: 'active',
+    subscription_status: 'active',
+    is_paid: true,
     subscriptionEndDate: { $gte: now }
   });
 
@@ -25,9 +26,12 @@ export const getDashboardStats = async () => {
     subscriptionEndDate: { $lt: now }
   });
 
-  // Inactive organizations: subscriptionStatus = 'inactive'
+  // Inactive organizations: subscription_status != 'active' OR is_paid = false
   const inactiveOrganizations = await Organization.countDocuments({
-    subscriptionStatus: 'inactive'
+    $or: [
+      { subscription_status: { $ne: 'active' } },
+      { is_paid: false }
+    ]
   });
 
   // Individual Accounts counts (psychologists without organization)
@@ -424,7 +428,7 @@ export const getCompanyAdminDashboardStats = async (companyAdminId) => {
 
   // Organization details
   const isExpired = organization.subscriptionEndDate && new Date() > new Date(organization.subscriptionEndDate);
-  const effectiveStatus = isExpired ? 'expired' : organization.subscriptionStatus;
+  const effectiveStatus = isExpired ? 'expired' : (organization.subscription_status === 'active' && organization.is_paid ? 'active' : organization.subscription_status);
   const endDate = organization.subscriptionEndDate;
   const diffTime = endDate - now;
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -691,7 +695,8 @@ export const getCompanyAdminDashboardStats = async (companyAdminId) => {
       _id: organization._id,
       name: organization.name,
       psychologistSeats: organization.psychologistSeats,
-      subscriptionStatus: organization.subscriptionStatus,
+      subscription_status: organization.subscription_status,
+      is_paid: organization.is_paid,
       subscriptionStartDate: organization.subscriptionStartDate,
       subscriptionEndDate: organization.subscriptionEndDate,
       effectiveStatus,

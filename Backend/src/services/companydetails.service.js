@@ -62,7 +62,7 @@ export async function getCompanyDetails(companyAdminId) {
 
   // Calculate effective status
   const isExpired = organization.subscriptionEndDate && new Date() > new Date(organization.subscriptionEndDate);
-  const effectiveStatus = isExpired ? 'expired' : organization.subscriptionStatus;
+  const effectiveStatus = isExpired ? 'expired' : (organization.subscription_status === 'active' && organization.is_paid ? 'active' : organization.subscription_status);
 
   // Calculate days remaining
   const now = new Date();
@@ -76,7 +76,8 @@ export async function getCompanyDetails(companyAdminId) {
       _id: organization._id,
       name: organization.name,
       psychologistSeats: organization.psychologistSeats,
-      subscriptionStatus: organization.subscriptionStatus,
+      subscription_status: organization.subscription_status,
+      is_paid: organization.is_paid,
       subscriptionStartDate: organization.subscriptionStartDate,
       subscriptionEndDate: organization.subscriptionEndDate,
       effectiveStatus,
@@ -147,7 +148,7 @@ export async function updateCompanyDetails(companyAdminId, updateData) {
 
   // Calculate effective status
   const isExpired = updated.subscriptionEndDate && new Date() > new Date(updated.subscriptionEndDate);
-  const effectiveStatus = isExpired ? 'expired' : updated.subscriptionStatus;
+  const effectiveStatus = isExpired ? 'expired' : (updated.subscription_status === 'active' && updated.is_paid ? 'active' : updated.subscription_status);
 
   return {
     ...updated,

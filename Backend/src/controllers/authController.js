@@ -26,16 +26,39 @@ export async function login(req, res, next) {
         }
 
         const user = await User.findOne({ email: email.toLowerCase().trim(), isActive: true })
-            .populate('organization', 'name');
+            .populate({
+                path: 'organization',
+                select: 'name subscription_status is_paid stripe_subscription_id subscriptionStartDate subscriptionEndDate psychologistSeats seats_limit'
+            });
         if (!user) return res.status(401).json({ error: 'Invalid credentials' });
 
         const isMatch = await user.comparePassword(password);
         if (!isMatch) return res.status(401).json({ error: 'Invalid credentials' });
 
         const token = generateToken({ sub: user.id, role: user.role });
+        
+        // For organization users, include organization subscription data in response
+        const userJson = user.toJSON();
+        if (user.organization && user.account_type === 'organization') {
+            // Organization subscription takes precedence
+            const org = user.organization;
+            userJson.effectiveSubscriptionStatus = org.subscription_status;
+            userJson.effectiveIsPaid = org.is_paid;
+            // Map subscription_status to subscriptionStatus for frontend compatibility
+            if (org.subscription_status === 'active' && org.is_paid) {
+                userJson.organization.subscriptionStatus = 'active';
+            } else {
+                userJson.organization.subscriptionStatus = 'inactive';
+            }
+        } else {
+            // Individual account uses own subscription
+            userJson.effectiveSubscriptionStatus = user.subscription_status;
+            userJson.effectiveIsPaid = user.is_paid;
+        }
+        
         return res.json({
             token,
-            user: user.toJSON(),
+            user: userJson,
         });
     } catch (err) {
         next(err);

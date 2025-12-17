@@ -13,7 +13,12 @@ export const authenticateToken = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, JWT_SECRET);
-    const user = await User.findById(decoded.sub).select('-password');
+    const user = await User.findById(decoded.sub)
+      .select('-password')
+      .populate({
+        path: 'organization',
+        select: 'name subscription_status is_paid stripe_subscription_id subscriptionStartDate subscriptionEndDate psychologistSeats seats_limit'
+      });
     
     if (!user || !user.isActive) {
       return res.status(401).json({ error: 'Invalid or inactive user' });

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Card, CardContent, Typography, Button, Chip, CircularProgress, Alert } from '@mui/material';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import useUser from '../../hooks/userHook';
+import { setAuth } from '../../store/userSlice';
 import RegisterLeftPanel from '../../components/register/RegisterLeftPanel';
 import RegisterEmailVerify from '../../components/register/RegisterEmailVerify';
 import RegisterIndividual from '../../components/register/RegisterIndividual';
@@ -20,6 +22,7 @@ import registerService from '../../services/auth/registerService';
  */
 const RegisterPage = () => {
     const { registration, login } = useUser();
+    const dispatch = useDispatch();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
 
@@ -87,34 +90,74 @@ const RegisterPage = () => {
             const status = searchParams.get('status');
             const sessionId = searchParams.get('session_id');
 
+            console.log('🔍 Payment redirect detected:', { status, sessionId });
+
             if (status === 'success' && sessionId) {
                 setProcessingPayment(true);
                 setPaymentError(null);
 
                 try {
-                    // Verify the checkout session with backend
+                    console.log('✅ Calling verifyCheckoutSession with sessionId:', sessionId);
+                    // Verify the checkout session with backend - THIS IS CRITICAL for updating subscription status
                     const verifyResult = await registerService.verifyCheckoutSession(sessionId);
                     
+                    console.log('📋 Verification result:', verifyResult);
+                    
                     if (!verifyResult.success) {
+                        console.error('❌ Verification failed:', verifyResult.error);
                         setPaymentError(verifyResult.error || 'Failed to verify payment');
                         setProcessingPayment(false);
                         return;
                     }
 
-                    // Get stored credentials
+                    console.log('✅ Payment verified successfully, proceeding to auto-login');
+
+                    // Check if verification response includes token (new method - no password needed!)
+                    const verificationData = verifyResult.data;
+                    const user = verificationData?.user;
+                    const token = verificationData?.token;
+
+                    if (token && user) {
+                        // Use token from verification response (preferred method - no sessionStorage needed!)
+                        console.log('🔐 Using token from verification response for auto-login');
+                        
+                        // Store token and user in sessionStorage
+                        sessionStorage.setItem('token', token);
+                        sessionStorage.setItem('user', JSON.stringify(user));
+                        
+                        // Update Redux state
+                        dispatch(setAuth({ token, user }));
+                        
+                        console.log('✅ Auth state updated, redirecting to dashboard');
+                        
+                        // Role-based redirect (same as login page)
+                        const role = user.role;
+                        const route = role === 'super_admin' ? '/super/dashboard'
+                            : role === 'company_admin' ? '/company/dashboard'
+                            : '/psychologist/dashboard';
+                        
+                        navigate(route, { replace: true });
+                        return;
+                    }
+
+                    // Fallback: Try to use stored credentials (backward compatibility)
+                    console.log('⚠️ No token in response, trying fallback with sessionStorage');
                     const pendingRegistration = sessionStorage.getItem('pendingRegistration');
                     if (!pendingRegistration) {
-                        setPaymentError('No pending registration credentials found. Please log in manually.');
+                        console.error('❌ No pending registration found in sessionStorage and no token in response');
+                        setPaymentError('Payment verified but unable to log you in automatically. Please log in manually with your credentials.');
                         setProcessingPayment(false);
                         return;
                     }
 
                     const { email, password } = JSON.parse(pendingRegistration);
+                    console.log('🔐 Attempting auto-login with stored credentials for:', email);
 
                     // Auto-login with stored credentials
                     const loginResult = await login(email, password);
                     
                     if (loginResult.success) {
+                        console.log('✅ Auto-login successful');
                         // Clear stored credentials
                         sessionStorage.removeItem('pendingRegistration');
                         
@@ -126,18 +169,23 @@ const RegisterPage = () => {
                         
                         navigate(route, { replace: true });
                     } else {
+                        console.error('❌ Auto-login failed:', loginResult.error);
                         setPaymentError(loginResult.error || 'Payment successful but auto-login failed. Please log in manually.');
                         setProcessingPayment(false);
                     }
                 } catch (error) {
-                    console.error('Error handling payment success:', error);
+                    console.error('❌ Error handling payment success:', error);
                     setPaymentError('An error occurred while processing your payment. Please try logging in manually.');
                     setProcessingPayment(false);
                 }
             } else if (status === 'cancelled') {
+                console.log('⚠️ Payment was cancelled');
                 // User cancelled payment, stay on registration page
                 // Clear URL params
                 navigate('/auth/register', { replace: true });
+            } else if (status || sessionId) {
+                // If we have status or sessionId but not both, log for debugging
+                console.warn('⚠️ Incomplete payment redirect:', { status, sessionId });
             }
         };
 
