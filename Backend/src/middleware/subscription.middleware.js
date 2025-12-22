@@ -164,20 +164,20 @@ export const addSubscriptionInfo = async (req, res, next) => {
       
       if (organization) {
         // Add subscription info to response locals (using subscription_status, not subscriptionStatus)
-         res.locals.subscriptionInfo = {
-           organizationId: organization._id,
-           organizationName: organization.name,
+        res.locals.subscriptionInfo = {
+          organizationId: organization._id,
+          organizationName: organization.name,
            subscription_status: organization.subscription_status, // Stripe status (source of truth)
            subscriptionStatus: organization.subscription_status === 'active' && organization.is_paid ? 'active' : 'inactive', // Legacy field mapped from subscription_status
            is_paid: organization.is_paid,
            stripe_subscription_id: organization.stripe_subscription_id,
-           subscriptionStartDate: organization.subscriptionStartDate,
-           subscriptionEndDate: organization.subscriptionEndDate,
-           isSubscriptionExpired: organization.isSubscriptionExpired,
+          subscriptionStartDate: organization.subscriptionStartDate,
+          subscriptionEndDate: organization.subscriptionEndDate,
+          isSubscriptionExpired: organization.isSubscriptionExpired,
            daysRemaining: organization.daysRemaining,
            psychologistSeats: organization.psychologistSeats,
            seats_limit: organization.seats_limit
-         };
+        };
       }
     } else if (req.user && !req.user.organization) {
       // For individual users, use user subscription info

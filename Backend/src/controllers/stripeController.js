@@ -189,7 +189,7 @@ async function handleSubscriptionUpdate(subscription) {
         } else if (subscription.status === 'canceled') {
           console.log(`❌ Individual subscription canceled for user: ${userId}`);
         } else {
-          console.log(`✅ Individual subscription updated for user: ${userId}`);
+        console.log(`✅ Individual subscription updated for user: ${userId}`);
         }
       }
     } else if (accountType === 'organization') {
@@ -206,7 +206,7 @@ async function handleSubscriptionUpdate(subscription) {
         } else if (subscription.status === 'canceled') {
           console.log(`❌ Organization subscription canceled for org: ${organizationId}`);
         } else {
-          console.log(`✅ Organization subscription updated for org: ${organizationId}`);
+        console.log(`✅ Organization subscription updated for org: ${organizationId}`);
         }
         
         // Sync admin user subscription fields from organization (including cancellation status)

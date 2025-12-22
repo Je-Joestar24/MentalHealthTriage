@@ -119,7 +119,10 @@ const SubscriptionMainDisplay = ({
 
                     {/* Right Column - Cancel Card */}
                     <Grid item xs={12} md={4}>
-                        <SubscriptionCancelCard organization={organization} />
+                        <SubscriptionCancelCard 
+                            organization={organization} 
+                            onCancellationSuccess={onUpgradeSuccess}
+                        />
                     </Grid>
                 </Grid>
             </Stack>
