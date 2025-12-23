@@ -117,7 +117,7 @@ export default function AddPatientModal({ open, onClose, onCreated }) {
         onClose?.();
       }
     } catch (error) {
-      console.error('Error creating patient:', error);
+      console.error('Error creating client:', error);
     } finally {
       setSubmitting(false);
     }
@@ -145,17 +145,17 @@ export default function AddPatientModal({ open, onClose, onCreated }) {
     >
       <DialogTitle sx={{ pb: 1 }}>
         <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          Add New Patient
+          Add New Client
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontSize: '0.875rem' }}>
-          Create a new patient record
+          Create a new client record
         </Typography>
       </DialogTitle>
 
       <DialogContent>
         <Stack spacing={2.5} sx={{ mt: 1 }}>
           <TextField
-            label="Patient Name"
+            label="Client Name"
             value={form.name}
             onChange={(e) => handleChange('name', e.target.value)}
             size="small"
@@ -298,7 +298,7 @@ export default function AddPatientModal({ open, onClose, onCreated }) {
             fontWeight: 600
           }}
         >
-          {submitting ? 'Creating…' : 'Create Patient'}
+          {submitting ? 'Creating…' : 'Create Client'}
         </Button>
       </DialogActions>
     </Dialog>

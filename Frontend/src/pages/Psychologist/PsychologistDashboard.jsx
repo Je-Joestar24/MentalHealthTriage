@@ -96,10 +96,10 @@ export default function PsychologistDashboard() {
                     }}
                 >
                     {[
-                        { label: 'Total Patients', value: stats.summary.totalPatients, delay: 0.1 },
+                        { label: 'Total Clients', value: stats.summary.totalPatients, delay: 0.1 },
                         { label: 'Total Triages', value: stats.summary.totalTriages, delay: 0.15 },
                         { label: 'Personal Diagnoses', value: stats.summary.totalPersonalDiagnoses, delay: 0.2 },
-                        { label: 'Active Patients', value: stats.summary.activePatients, delay: 0.25 },
+                        { label: 'Active Clients', value: stats.summary.activePatients, delay: 0.25 },
                         { label: 'This Month', value: stats.summary.triagesThisMonth, delay: 0.3 },
                     ].map((item, index) => (
                         <Card

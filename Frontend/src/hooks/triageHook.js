@@ -48,10 +48,10 @@ const useTriage = () => {
     async (patientId, triageData) => {
       if (!patientId) {
         dispatch(displayNotification({ 
-          message: 'Patient ID is required', 
+          message: 'Client ID is required', 
           type: 'error' 
         }));
-        return { success: false, error: 'Patient ID is required' };
+        return { success: false, error: 'Client ID is required' };
       }
 
       if (!triageData.severityLevel) {
@@ -104,10 +104,10 @@ const useTriage = () => {
     async (patientId, queryParams = {}) => {
       if (!patientId) {
         dispatch(displayNotification({ 
-          message: 'Patient ID is required', 
+          message: 'Client ID is required', 
           type: 'error' 
         }));
-        return { success: false, error: 'Patient ID is required' };
+        return { success: false, error: 'Client ID is required' };
       }
 
       const result = await dispatch(getTriageHistoryThunk({ patientId, queryParams }));

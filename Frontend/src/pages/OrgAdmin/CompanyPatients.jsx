@@ -104,7 +104,7 @@ export default function CompanyPatients() {
             dispatch(
                 showGlobalDialog({
                     type: 'danger',
-                    title: 'Archive Patient',
+                    title: 'Archive Client',
                     message: `Are you sure you want to archive "${patient.name}"? This action can be undone later.`,
                     confirmText: 'Archive',
                     cancelText: 'Cancel',
@@ -127,8 +127,8 @@ export default function CompanyPatients() {
             dispatch(
                 showGlobalDialog({
                     type: 'info',
-                    title: 'Restore Patient',
-                    message: `Are you sure you want to restore "${patient.name}"? The patient will be active again.`,
+                    title: 'Restore Client',
+                    message: `Are you sure you want to restore "${patient.name}"? The Client will be active again.`,
                     confirmText: 'Restore',
                     cancelText: 'Cancel',
                     // The actual restore action only happens when user clicks "Restore" in the dialog
@@ -191,7 +191,7 @@ export default function CompanyPatients() {
                             mb: 0.3
                         }}
                     >
-                        Patients
+                        Clients
                     </Typography>
                     <Typography
                         variant="body2"
@@ -202,7 +202,7 @@ export default function CompanyPatients() {
                             opacity: 0.8
                         }}
                     >
-                        Manage and triage your patients
+                        Manage and triage your clients
                     </Typography>
                 </Box>
 

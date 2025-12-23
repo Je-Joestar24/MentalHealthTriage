@@ -259,7 +259,7 @@ const PsychologistTableList = ({
                         <DeleteOutlineIcon sx={{ fontSize: 18 }} />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title="View Diagnosed Patients (Coming Soon)">
+                    <Tooltip title="View Diagnosed Clients (Coming Soon)">
                       <span>
                         <IconButton
                           size="small"

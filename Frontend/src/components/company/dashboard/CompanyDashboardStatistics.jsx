@@ -124,7 +124,7 @@ const CompanyDashboardStatistics = ({ stats, loading }) => {
         {/* Patients */}
         <StatCard
           icon={PeopleOutline}
-          title="Patients"
+          title="Clients"
           delay={0.2}
           stats={[
             { label: 'Total', value: stats.patients?.total },
@@ -146,7 +146,7 @@ const CompanyDashboardStatistics = ({ stats, loading }) => {
             { label: 'This Week', value: stats.triages?.thisWeek },
             { label: 'This Month', value: stats.triages?.thisMonth },
             { label: 'This Year', value: stats.triages?.thisYear },
-            { label: 'Avg/Patient', value: stats.triages?.averagePerPatient?.toFixed(2) || 0 },
+            { label: 'Avg/Client', value: stats.triages?.averagePerPatient?.toFixed(2) || 0 },
           ]}
         />
 
@@ -180,7 +180,7 @@ const CompanyDashboardStatistics = ({ stats, loading }) => {
         {stats.patients?.byGender && Object.keys(stats.patients.byGender).length > 0 && (
           <StatCard
             icon={PeopleOutline}
-            title="Patients by Gender"
+            title="Clients by Gender"
             delay={0.6}
             stats={Object.entries(stats.patients.byGender).map(([gender, count]) => ({
               label: gender.charAt(0).toUpperCase() + gender.slice(1),

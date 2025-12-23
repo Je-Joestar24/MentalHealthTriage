@@ -156,7 +156,7 @@ const CompanyDashboardTriage = ({ activity, loading }) => {
                                     color: 'text.primary',
                                   }}
                                 >
-                                  {triage.patient?.name || 'Unknown Patient'}
+                                  {triage.patient?.name || 'Unknown Client'}
                                 </Typography>
                                 <Typography
                                   variant="caption"

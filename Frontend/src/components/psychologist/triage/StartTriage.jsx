@@ -54,7 +54,7 @@ export default function StartTriage() {
     if (loading) {
         return (
             <Container maxWidth="xl" sx={{ py: 4 }}>
-                <Typography>Loading patient details...</Typography>
+                <Typography>Loading client details...</Typography>
             </Container>
         );
     }
@@ -64,10 +64,10 @@ export default function StartTriage() {
             <Container maxWidth="xl" sx={{ py: 4 }}>
                 <Card elevation={0} sx={{ p: 3, textAlign: 'center' }}>
                     <Typography variant="h6" color="text.secondary">
-                        Patient not found
+                        client not found
                     </Typography>
                     <Button onClick={handleBack} sx={{ mt: 2 }}>
-                        Back to Patient List
+                        Back to client List
                     </Button>
                 </Card>
             </Container>

@@ -154,7 +154,7 @@ export default function TriageLeftPanel({ patientId, onSave }) {
         {/* Header */}
         <Box>
           <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 600, mb: 0.5 }}>
-            Patient Input
+            Client Input
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
             Enter symptoms, duration, and course. Saving to: {patientId?.slice(-8) || 'N/A'}

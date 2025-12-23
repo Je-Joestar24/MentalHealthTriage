@@ -107,7 +107,7 @@ const CompanyDashboardSummary = ({ summary, loading }) => {
         />
         <SummaryCard
           icon={PeopleOutline}
-          title="Patients"
+          title="Clients"
           value={summary.totalPatients}
           subtitle={`${summary.activePatients} active`}
           delay={0.2}

@@ -160,7 +160,7 @@ export default function EditPatientModal({ open, onClose, data, onUpdated }) {
         onClose?.();
       }
     } catch (error) {
-      console.error('Error updating patient:', error);
+      console.error('Error updating Client:', error);
     } finally {
       setSubmitting(false);
     }
@@ -193,17 +193,17 @@ export default function EditPatientModal({ open, onClose, data, onUpdated }) {
     >
       <DialogTitle sx={{ pb: 1 }}>
         <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          Edit Patient Information
+          Edit Client Information
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontSize: '0.875rem' }}>
-          Update patient details for {data?.name || 'this patient'}
+          Update client details for {data?.name || 'this client'}
         </Typography>
       </DialogTitle>
 
       <DialogContent>
         <Stack spacing={2.5} sx={{ mt: 1 }}>
           <TextField
-            label="Patient Name"
+            label="Client Name"
             value={form.name}
             onChange={(e) => handleChange('name', e.target.value)}
             size="small"

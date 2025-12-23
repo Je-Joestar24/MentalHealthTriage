@@ -17,8 +17,8 @@ const PatientsPagination = ({ page = 1, pages = 1, total = 0, onChange }) => {
       >
         <Typography variant="caption" color="text.secondary">
           {showControls
-            ? `Showing page ${page} of ${pages} • Total patients: ${total}`
-            : `Total patients: ${total}`}
+            ? `Showing page ${page} of ${pages} • Total clients: ${total}`
+            : `Total clients: ${total}`}
         </Typography>
         {showControls && (
           <MuiPagination

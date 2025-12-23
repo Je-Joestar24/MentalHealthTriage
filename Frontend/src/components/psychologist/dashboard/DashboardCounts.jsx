@@ -246,7 +246,7 @@ export default function DashboardCounts({ stats, loading }) {
         {/* Patients */}
         <MainStatCard
           icon={PeopleOutline}
-          title="Patients"
+          title="Clients"
           delay={0.1}
           stats={[
             { label: 'Total', value: stats.patients?.total },
@@ -268,7 +268,7 @@ export default function DashboardCounts({ stats, loading }) {
             { label: 'Today', value: stats.triages?.today },
             { label: 'This Week', value: stats.triages?.thisWeek },
             { label: 'This Month', value: stats.triages?.thisMonth },
-            { label: 'Avg/Patient', value: stats.triages?.averagePerPatient?.toFixed(2) },
+            { label: 'Avg/Client', value: stats.triages?.averagePerPatient?.toFixed(2) },
           ]}
         />
 

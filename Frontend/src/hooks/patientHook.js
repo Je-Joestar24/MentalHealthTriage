@@ -39,12 +39,12 @@ const usePatients = () => {
       try {
         const result = await dispatch(createPatientThunk(payload));
         if (createPatientThunk.fulfilled.match(result)) {
-          dispatch(displayNotification({ message: 'Patient created successfully', type: 'success' }));
+          dispatch(displayNotification({ message: 'Client created successfully', type: 'success' }));
         } else {
           const message =
             typeof result.payload === 'string'
               ? result.payload
-              : result.payload?.message || 'Failed to create patient';
+              : result.payload?.message || 'Failed to create client';
           dispatch(displayNotification({ message, type: 'error' }));
         }
         return result;
@@ -61,12 +61,12 @@ const usePatients = () => {
       try {
         const result = await dispatch(updatePatientThunk({ id, payload }));
         if (updatePatientThunk.fulfilled.match(result)) {
-          dispatch(displayNotification({ message: 'Patient updated successfully', type: 'success' }));
+          dispatch(displayNotification({ message: 'Client updated successfully', type: 'success' }));
         } else {
           const message =
             typeof result.payload === 'string'
               ? result.payload
-              : result.payload?.message || 'Failed to update patient';
+              : result.payload?.message || 'Failed to update client';
           dispatch(displayNotification({ message, type: 'error' }));
         }
         return result;
@@ -83,12 +83,12 @@ const usePatients = () => {
       try {
         const result = await dispatch(softDeletePatientThunk(id));
         if (softDeletePatientThunk.fulfilled.match(result)) {
-          dispatch(displayNotification({ message: 'Patient deleted successfully', type: 'success' }));
+          dispatch(displayNotification({ message: 'Client deleted successfully', type: 'success' }));
         } else {
           const message =
             typeof result.payload === 'string'
               ? result.payload
-              : result.payload?.message || 'Failed to delete patient';
+              : result.payload?.message || 'Failed to delete client';
           dispatch(displayNotification({ message, type: 'error' }));
         }
         return result;
@@ -105,12 +105,12 @@ const usePatients = () => {
       try {
         const result = await dispatch(restorePatientThunk(id));
         if (restorePatientThunk.fulfilled.match(result)) {
-          dispatch(displayNotification({ message: 'Patient restored successfully', type: 'success' }));
+          dispatch(displayNotification({ message: 'Client restored successfully', type: 'success' }));
         } else {
           const message =
             typeof result.payload === 'string'
               ? result.payload
-              : result.payload?.message || 'Failed to restore patient';
+              : result.payload?.message || 'Failed to restore client';
           dispatch(displayNotification({ message, type: 'error' }));
         }
         return result;

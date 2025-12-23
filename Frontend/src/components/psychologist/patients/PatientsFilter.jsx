@@ -110,7 +110,7 @@ const PatientsFilter = ({ filters = {}, onChange, onReset }) => {
                     <TextField
                         fullWidth
                         size="small"
-                        label="Search patients"
+                        label="Search clients"
                         placeholder="Search by name, email, or phone"
                         value={local.search}
                         onChange={(e) => handleChange('search', e.target.value, true)}

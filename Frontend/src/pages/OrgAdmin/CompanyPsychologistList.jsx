@@ -99,7 +99,7 @@ export default function CompanyPsychologistList() {
 
   const handleViewPatients = useCallback((psychologist) => {
     // TODO: Implement view diagnosed patients functionality
-    console.log('View patients for psychologist:', psychologist);
+    console.log('View clients for psychologist:', psychologist);
   }, []);
 
   const appliedFiltersSummary = useMemo(() => {

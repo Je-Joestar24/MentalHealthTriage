@@ -48,10 +48,10 @@ const StatusChip = ({ status = 'inactive', isDeleted = false }) => {
 const EmptyState = () => (
   <Box sx={{ py: 6, textAlign: 'center', color: 'text.secondary' }}>
     <Typography variant="body1" sx={{ fontWeight: 500 }}>
-      No patients found
+      No clients found
     </Typography>
     <Typography variant="body2">
-      Try adjusting your filters or add a new patient.
+      Try adjusting your filters or add a new client.
     </Typography>
   </Box>
 );
@@ -90,7 +90,7 @@ const PatientsTableList = ({
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell sx={{ fontWeight: 600 }}>Patient</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Client</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Contact</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Psychologist</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Organization</TableCell>
@@ -173,7 +173,7 @@ const PatientsTableList = ({
                         </span>
                       </Tooltip>
                       {user?.user?.role === 'psychologist' && (<>{row.isDeleted ? (
-                        <Tooltip title="Restore patient">
+                        <Tooltip title="Restore client">
                           <span>
                             <IconButton size="small" onClick={() => onRestore?.(row)}>
                               <RestoreOutlinedIcon fontSize="small" />
@@ -182,14 +182,14 @@ const PatientsTableList = ({
                         </Tooltip>
                       ) : (
                         <>
-                          <Tooltip title="Edit patient">
+                          <Tooltip title="Edit client">
                             <span>
                               <IconButton size="small" onClick={() => onEdit?.(row)}>
                                 <EditOutlinedIcon fontSize="small" />
                               </IconButton>
                             </span>
                           </Tooltip>
-                          <Tooltip title="Archive patient">
+                          <Tooltip title="Archive client">
                             <span>
                               <IconButton size="small" color="error" onClick={() => onDelete?.(row)}>
                                 <DeleteOutlineIcon fontSize="small" />

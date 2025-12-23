@@ -38,10 +38,10 @@ const StatusChip = ({ status = 'inactive', isDeleted = false }) => {
 const EmptyState = () => (
   <Box sx={{ py: 6, textAlign: 'center', color: 'text.secondary' }}>
     <Typography variant="body1" sx={{ fontWeight: 500 }}>
-      No patients found
+      No clients found
     </Typography>
     <Typography variant="body2">
-      Try adjusting your filters to find patients.
+      Try adjusting your filters to find clients.
     </Typography>
   </Box>
 );
@@ -77,7 +77,7 @@ const TriagePatientTableList = ({
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell sx={{ fontWeight: 600 }}>Patient</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Client</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Contact</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Psychologist</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>

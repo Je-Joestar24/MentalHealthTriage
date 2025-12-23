@@ -127,7 +127,7 @@ const CompanyDetailsStatistics = ({ statistics, loading }) => {
         {/* Patients */}
         <StatCard
           icon={MonitorHeartOutlined}
-          title="Patients"
+          title="Clients"
           delay={0.2}
           stats={[
             { label: 'Total', value: statistics.patients?.total || 0 },

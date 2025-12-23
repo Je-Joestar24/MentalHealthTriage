@@ -32,7 +32,7 @@ const HeroSection = () => {
 
     const stats = [
         { number: "--", label: "Professionals" },
-        { number: "--", label: "Patients Served" },
+        { number: "--", label: "Clients Served" },
         { number: "99.9%", label: "Uptime" }
     ];
 
@@ -111,7 +111,7 @@ const HeroSection = () => {
                                 maxWidth: '90%'
                             }}
                         >
-                            Streamline patient assessments, enhance diagnostic accuracy, and improve care coordination with our comprehensive mental health triage platform.
+                            Streamline Client assessments, enhance diagnostic accuracy, and improve care coordination with our comprehensive mental health triage platform.
                         </Typography>
 
                         {/* Feature Chips */}
@@ -211,7 +211,7 @@ const HeroSection = () => {
                                     <CardContent sx={{ p: 2, textAlign: 'center' }}>
                                         <Psychology sx={{ color: 'primary.main', mb: 1 }} />
                                         <Typography variant="body2" fontWeight={600}>
-                                            Patient Assessment
+                                            Client Assessment
                                         </Typography>
                                     </CardContent>
                                 </Card>

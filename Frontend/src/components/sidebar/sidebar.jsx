@@ -67,15 +67,15 @@ const Sidebar = ({ mobileOpen, onMobileClose }) => {
     { to: "/company/details", icon: InfoOutlinedIcon, label: "Company Details" },
     { to: "/company/diagnosis/list", icon: MedicalInformationOutlinedIcon, label: "Diagnosis List" },
     { to: "/company/psychologist/list", icon: PsychologyAltOutlinedIcon, label: "Psychologists List" },
-    { to: "/company/patients", icon: GroupsOutlinedIcon, label: "Patients" },
+    { to: "/company/patients", icon: GroupsOutlinedIcon, label: "Clients" },
     { to: "/company/subscription", icon: CardMembershipOutlinedIcon, label: "Subscription" },
   ];
 
   
   const psychoNavItems = [
     { to: "/psychologist/dashboard", icon: SpaceDashboardOutlinedIcon, label: "Dashboard" },
-    { to: "/psychologist/triage", icon: MonitorHeartOutlinedIcon, label: "Triage Patient" },
-    { to: "/psychologist/patients", icon: GroupsOutlinedIcon, label: "Patients" },
+    { to: "/psychologist/triage", icon: MonitorHeartOutlinedIcon, label: "Triage Client" },
+    { to: "/psychologist/patients", icon: GroupsOutlinedIcon, label: "Clients" },
     { to: "/psychologist/diagnosis/list", icon: MedicalInformationOutlinedIcon, label: "Diagnosis List" },
   ];
 

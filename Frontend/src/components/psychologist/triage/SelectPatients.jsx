@@ -88,7 +88,7 @@ export default function SelectPatients() {
               mb: 0.3
             }}
           >
-            Select Patient for Triage
+            Select client for Triage
           </Typography>
           <Typography
             variant="body2"
@@ -99,7 +99,7 @@ export default function SelectPatients() {
               opacity: 0.8
             }}
           >
-            Choose a patient to begin triage assessment
+            Choose a client to begin triage assessment
           </Typography>
         </Box>
       </Stack>
