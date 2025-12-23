@@ -6,8 +6,8 @@ import useDiagnosis from "../../hooks/diagnosisHook";
 import DiagnosisFilter from "../../components/admin/diagnosis/DiagnosisFilter";
 import DiagnosisTableList from "../../components/admin/diagnosis/DiagnosisTableList";
 import DiagnosisPagination from "../../components/admin/diagnosis/DiagnosisPaginations";
-import DiagnosisAddModal from "../../components/admin/diagnosis/DiagnosisAddModal";
-import DiagnosisEditModal from "../../components/admin/diagnosis/DiagnosisEditModal";
+/* import DiagnosisAddModal from "../../components/admin/diagnosis/DiagnosisAddModal";
+import DiagnosisEditModal from "../../components/admin/diagnosis/DiagnosisEditModal"; */
 import DiagnosisAddNoteModal from "../../components/admin/diagnosis/DiagnosisAddNoteModal";
 import DiagnosisNotesList from "../../components/admin/diagnosis/DiagnosisNotesList";
 
@@ -36,9 +36,9 @@ export default function PsychologistDiagnosisList() {
         selectedDiagnosis,
     } = useDiagnosis();
 
-    const [openAdd, setOpenAdd] = useState(false);
+/*     const [openAdd, setOpenAdd] = useState(false);
     const [selected, setSelected] = useState(null);
-    const [openEdit, setOpenEdit] = useState(false);
+    const [openEdit, setOpenEdit] = useState(false); */
 
     const handleApplyFilters = useCallback((next) => {
         updateFilters(next);
@@ -111,7 +111,7 @@ export default function PsychologistDiagnosisList() {
                         Manage clinical diagnostic definitions
                     </Typography>
                 </Box>
-
+{/* 
                 <Stack direction="row" spacing={1.5}>
                     <Button
                         onClick={() => setOpenAdd(true)}
@@ -139,7 +139,7 @@ export default function PsychologistDiagnosisList() {
                     >
                         New diagnosis
                     </Button>
-                </Stack>
+                </Stack> */}
             </Stack>
 
             <Card elevation={0} sx={{ p: 1.5, mb: 1.5 }}>
@@ -162,7 +162,7 @@ export default function PsychologistDiagnosisList() {
                 onChange={handlePageChange}
             />
 
-            <DiagnosisAddModal
+{/*             <DiagnosisAddModal
                 open={openAdd}
                 onClose={() => setOpenAdd(false)}
                 onCreated={() => {
@@ -178,7 +178,7 @@ export default function PsychologistDiagnosisList() {
                     // No reload needed; slice updates on fulfilled
                 }}
             />
-
+ */}
             <DiagnosisAddNoteModal
                 open={openAddNote}
                 onClose={handleCloseAddNote}
