@@ -22,6 +22,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import HistoryEduOutlinedIcon from '@mui/icons-material/HistoryEduOutlined';
 import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined';
 import { useNavigate } from 'react-router-dom';
 import useUser from '../../../hooks/userHook';
 
@@ -75,7 +76,8 @@ const PatientsTableList = ({
   onViewTriage,
   onEdit,
   onDelete,
-  onRestore
+  onRestore,
+  onAssign
 }) => {
 
   const user = useUser();
@@ -165,6 +167,25 @@ const PatientsTableList = ({
                           </Button>
                         </span>
                       </Tooltip>)}
+                      {user?.user?.role === 'company_admin' && !row.isDeleted && (
+                        <Tooltip title="Assign Psychologist">
+                          <span>
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={() => onAssign?.(row)}
+                              sx={{
+                                '&:hover': {
+                                  bgcolor: 'primary.light',
+                                  color: 'white'
+                                }
+                              }}
+                            >
+                              <PersonAddOutlinedIcon fontSize="small" />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                      )}
                       <Tooltip title="View Triage History">
                         <span>
                           <IconButton size="small" onClick={() => onViewTriage?.(row)}>

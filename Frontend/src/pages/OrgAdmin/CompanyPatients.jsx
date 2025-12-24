@@ -10,6 +10,7 @@ import PatientsTableList from '../../components/psychologist/patients/PatientsTa
 import PatientsPagination from '../../components/psychologist/patients/PatientsPagination';
 import AddPatientModal from '../../components/psychologist/patients/AddPatientModal';
 import EditPatientModal from '../../components/psychologist/patients/EditPatientModal';
+import PsychologistSelectModal from '../../components/psychologist/patients/PsychologistSelectModal';
 import usePatients from '../../hooks/patientHook';
 import { showGlobalDialog } from '../../store/uiSlice';
 
@@ -28,6 +29,7 @@ export default function CompanyPatients() {
         updatePatient,
         softDeletePatient,
         restorePatient,
+        reassignPsychologist,
         updateFilter,
         clearAllMessages,
         resetCurrentPatient
@@ -35,6 +37,7 @@ export default function CompanyPatients() {
 
     const [addModalOpen, setAddModalOpen] = useState(false);
     const [editModalOpen, setEditModalOpen] = useState(false);
+    const [assignModalOpen, setAssignModalOpen] = useState(false);
     const [selectedPatient, setSelectedPatient] = useState(null);
 
     useEffect(() => {
@@ -144,6 +147,30 @@ export default function CompanyPatients() {
         [dispatch, filters, loadPatients, restorePatient]
     );
 
+    const handleAssignPsychologist = useCallback(
+        (patient) => {
+            setSelectedPatient(patient);
+            setAssignModalOpen(true);
+        },
+        []
+    );
+
+    const handleCloseAssignModal = useCallback(() => {
+        setAssignModalOpen(false);
+        setSelectedPatient(null);
+    }, []);
+
+    const handleAssign = useCallback(
+        async (patientId, psychologistId) => {
+            const result = await reassignPsychologist(patientId, psychologistId);
+            if (result?.meta?.requestStatus === 'fulfilled') {
+                loadPatients(filters);
+            }
+            return result;
+        },
+        [reassignPsychologist, loadPatients, filters]
+    );
+
     const appliedFiltersSummary = useMemo(() => {
         const summary = [];
         if (filters.search) summary.push(`Search: "${filters.search}"`);
@@ -230,12 +257,21 @@ export default function CompanyPatients() {
                 onEdit={handleEditPatient}
                 onDelete={handleDeletePatient}
                 onRestore={handleRestorePatient}
+                onAssign={handleAssignPsychologist}
             />
             <PatientsPagination
                 page={pagination.currentPage}
                 pages={pagination.totalPages}
                 total={pagination.totalItems}
                 onChange={handlePageChange}
+            />
+
+            {/* Psychologist Select Modal */}
+            <PsychologistSelectModal
+                open={assignModalOpen}
+                onClose={handleCloseAssignModal}
+                patient={selectedPatient}
+                onAssign={handleAssign}
             />
         </Container>
     );
