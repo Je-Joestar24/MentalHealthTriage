@@ -5,7 +5,8 @@ import {
   createPatient,
   updatePatient,
   softDeletePatient,
-  restorePatient
+  restorePatient,
+  reassignPsychologist
 } from '../controllers/patients.controller.js';
 import { authenticateToken } from '../middleware/auth.middleware.js';
 
@@ -23,6 +24,14 @@ const requirePsychologistOrCompanyAdmin = (req, res, next) => {
 const requirePsychologist = (req, res, next) => {
   if (!req.user || req.user.role !== 'psychologist') {
     return res.status(403).json({ success: false, error: 'Psychologist access required' });
+  }
+  next();
+};
+
+// Middleware to ensure user is a company_admin
+const requireCompanyAdmin = (req, res, next) => {
+  if (!req.user || req.user.role !== 'company_admin') {
+    return res.status(403).json({ success: false, error: 'Company admin access required' });
   }
   next();
 };
@@ -46,6 +55,9 @@ router.delete('/:id', requirePsychologist, softDeletePatient);
 
 // PATCH /api/patients/:id/restore - Only psychologists can restore
 router.patch('/:id/restore', requirePsychologist, restorePatient);
+
+// PATCH /api/patients/:id/reassign - Only company_admin can reassign psychologists
+router.patch('/:id/reassign', requireCompanyAdmin, reassignPsychologist);
 
 export default router;
 

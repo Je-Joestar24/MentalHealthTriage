@@ -243,3 +243,54 @@ export const getPatientById = async (patientId, user) => {
   return patient;
 };
 
+export const reassignPsychologist = async (patientId, newPsychologistId, user) => {
+  // Only company_admin can reassign psychologists
+  if (user.role !== 'company_admin') {
+    throw new Error('Only company admin can reassign psychologists to patients');
+  }
+
+  // Get organization ID (handle both ObjectId and populated object)
+  const organizationId = user.organization?._id || user.organization;
+  if (!organizationId) {
+    throw new Error('Company admin must belong to an organization');
+  }
+
+  // Validate patient exists and belongs to the organization
+  const patient = await Patient.findOne({
+    _id: patientId,
+    organization: organizationId,
+    isDeleted: false
+  });
+
+  if (!patient) {
+    throw new Error('Patient not found or does not belong to your organization');
+  }
+
+  // Validate new psychologist exists, is a psychologist, and belongs to the same organization
+  const newPsychologist = await User.findOne({
+    _id: newPsychologistId,
+    role: 'psychologist',
+    organization: organizationId,
+    isActive: true
+  });
+
+  if (!newPsychologist) {
+    throw new Error('Psychologist not found, is not active, or does not belong to your organization');
+  }
+
+  // Check if the new psychologist is different from the current one
+  if (patient.assignedPsychologist.toString() === newPsychologistId.toString()) {
+    throw new Error('Patient is already assigned to this psychologist');
+  }
+
+  // Update the assigned psychologist
+  patient.assignedPsychologist = newPsychologistId;
+  await patient.save();
+
+  // Return updated patient with populated fields
+  return Patient.findById(patientId)
+    .populate('assignedPsychologist', 'name email role')
+    .populate('organization', 'name')
+    .lean();
+};
+

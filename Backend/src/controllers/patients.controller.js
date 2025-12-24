@@ -55,3 +55,26 @@ export const restorePatient = asyncWrapper(async (req, res) => {
   });
 });
 
+export const reassignPsychologist = asyncWrapper(async (req, res) => {
+  const { psychologistId } = req.body;
+  
+  if (!psychologistId) {
+    return res.status(400).json({
+      success: false,
+      error: 'Psychologist ID is required'
+    });
+  }
+
+  const patient = await patientsService.reassignPsychologist(
+    req.params.id,
+    psychologistId,
+    req.user
+  );
+  
+  res.json({
+    success: true,
+    data: patient,
+    message: 'Psychologist reassigned successfully'
+  });
+});
+
