@@ -67,6 +67,17 @@ export const restorePatient = createAsyncThunk(
   }
 );
 
+export const reassignPsychologist = createAsyncThunk(
+  'patients/reassignPsychologist',
+  async ({ patientId, psychologistId }, { rejectWithValue }) => {
+    const result = await patientsService.reassignPsychologist(patientId, psychologistId);
+    if (!result.success) {
+      return rejectWithValue(result.error || 'Failed to reassign psychologist');
+    }
+    return result.data;
+  }
+);
+
 const initialState = {
   list: [],
   pagination: {
@@ -215,6 +226,27 @@ const patientSlice = createSlice({
         state.error = null;
       })
       .addCase(restorePatient.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Reassign psychologist
+      .addCase(reassignPsychologist.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(reassignPsychologist.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.list.findIndex((patient) => patient._id === action.payload._id);
+        if (index !== -1) {
+          state.list[index] = action.payload;
+        }
+        if (state.currentPatient && state.currentPatient._id === action.payload._id) {
+          state.currentPatient = action.payload;
+        }
+        state.success = 'Psychologist reassigned successfully';
+        state.error = null;
+      })
+      .addCase(reassignPsychologist.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

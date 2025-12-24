@@ -85,4 +85,18 @@ export const restorePatient = async (id) => {
   }
 };
 
+export const reassignPsychologist = async (patientId, psychologistId) => {
+  try {
+    const { data } = await api.patch(`/api/patients/${patientId}/reassign`, { psychologistId });
+    return {
+      success: data.success ?? true,
+      data: data.data,
+      message: data.message || 'Psychologist reassigned successfully'
+    };
+  } catch (error) {
+    const message = error?.response?.data?.error || error.message || 'Failed to reassign psychologist';
+    return { success: false, error: message };
+  }
+};
+
 

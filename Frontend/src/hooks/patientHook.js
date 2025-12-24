@@ -7,6 +7,7 @@ import {
   updatePatient as updatePatientThunk,
   softDeletePatient as softDeletePatientThunk,
   restorePatient as restorePatientThunk,
+  reassignPsychologist as reassignPsychologistThunk,
   setFilters,
   clearMessages,
   clearCurrentPatient
@@ -121,6 +122,28 @@ const usePatients = () => {
     [dispatch]
   );
 
+  const reassignPsychologist = useCallback(
+    async (patientId, psychologistId) => {
+      dispatch(setGlobalLoading(true));
+      try {
+        const result = await dispatch(reassignPsychologistThunk({ patientId, psychologistId }));
+        if (reassignPsychologistThunk.fulfilled.match(result)) {
+          dispatch(displayNotification({ message: 'Psychologist reassigned successfully', type: 'success' }));
+        } else {
+          const message =
+            typeof result.payload === 'string'
+              ? result.payload
+              : result.payload?.message || 'Failed to reassign psychologist';
+          dispatch(displayNotification({ message, type: 'error' }));
+        }
+        return result;
+      } finally {
+        dispatch(setGlobalLoading(false));
+      }
+    },
+    [dispatch]
+  );
+
   const updateFilter = useCallback(
     (nextFilters) => {
       dispatch(setFilters(nextFilters));
@@ -144,6 +167,7 @@ const usePatients = () => {
     updatePatient,
     softDeletePatient,
     restorePatient,
+    reassignPsychologist,
     updateFilter,
     clearAllMessages,
     resetCurrentPatient
