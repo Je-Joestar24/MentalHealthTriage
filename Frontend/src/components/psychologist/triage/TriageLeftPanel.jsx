@@ -78,7 +78,7 @@ export default function TriageLeftPanel({ patientId, onSave }) {
     return Array.from(new Set([...backend, ...fallback]));
   }, [suggestionList]);
 
-  // Auto-match diagnoses when symptoms or system filters change
+  // Auto-match diagnoses when symptoms, system filters, or triage fields change
   // Preloads diagnoses on mount (show all with limit 2) and matches when symptoms are entered
   useEffect(() => {
     const system = systemFilters.dsm5 && systemFilters.icd10 
@@ -87,14 +87,28 @@ export default function TriageLeftPanel({ patientId, onSave }) {
       ? 'DSM-5' 
       : 'ICD-10';
     
-    if (symptoms.length > 0) {
-      // Match with symptoms (use diagnosisLimit)
-      matchDiagnoses(symptoms, system, { page: 1, limit: diagnosisLimit });
-    } else {
-      // Show all if no symptoms (use diagnosisLimit)
-      matchDiagnoses([], system, { page: 1, limit: diagnosisLimit, showAll: true });
+    // Build triage filters from current form state
+    const triageFilters = {};
+    if (duration && duration.trim() !== '') {
+      triageFilters.duration = parseFloat(duration);
+      triageFilters.durationUnit = durationUnit;
     }
-  }, [symptoms, systemFilters.dsm5, systemFilters.icd10, diagnosisLimit]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (course) {
+      triageFilters.course = course;
+    }
+    if (severityLevel) {
+      triageFilters.severityLevel = severityLevel;
+    }
+    // Note: preliminaryDiagnosis and notes are not in this form, but can be added if needed
+    
+    if (symptoms.length > 0 || Object.keys(triageFilters).length > 0) {
+      // Match with symptoms and/or filters (use diagnosisLimit)
+      matchDiagnoses(symptoms, system, { page: 1, limit: diagnosisLimit }, triageFilters);
+    } else {
+      // Show all if no symptoms or filters (use diagnosisLimit)
+      matchDiagnoses([], system, { page: 1, limit: diagnosisLimit, showAll: true }, {});
+    }
+  }, [symptoms, systemFilters.dsm5, systemFilters.icd10, diagnosisLimit, duration, durationUnit, course, severityLevel, matchDiagnoses]);
 
   const handleSymptomsChange = useCallback((e, newValue) => {
     // Normalize all symptoms (convert spaces to underscores, lowercase)

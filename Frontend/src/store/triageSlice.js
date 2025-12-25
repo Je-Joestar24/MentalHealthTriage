@@ -3,23 +3,30 @@ import * as triageService from '../services/psychologist/triageService';
 import { displayNotification } from './uiSlice';
 
 /**
- * Match diagnoses based on symptoms
+ * Match diagnoses based on symptoms and triage filters
  */
 export const matchDiagnoses = createAsyncThunk(
   'triage/matchDiagnoses',
-  async ({ symptoms, system, queryParams }, { rejectWithValue, dispatch }) => {
+  async ({ symptoms, system, queryParams, triageFilters }, { rejectWithValue, dispatch }) => {
     try {
-      const result = await triageService.matchDiagnoses(symptoms, system, queryParams);
+      const result = await triageService.matchDiagnoses(symptoms, system, queryParams, triageFilters || {});
       if (!result.success) {
+        // Ensure error is always a string
+        const errorMessage = typeof result.error === 'string' 
+          ? result.error 
+          : (result.error?.message || 'Failed to match diagnoses');
         dispatch(displayNotification({ 
-          message: result.error || 'Failed to match diagnoses', 
+          message: errorMessage, 
           type: 'error' 
         }));
-        return rejectWithValue(result.error || 'Failed to match diagnoses');
+        return rejectWithValue(errorMessage);
       }
       return result;
     } catch (error) {
-      const message = error?.message || 'Failed to match diagnoses';
+      // Ensure error message is always a string
+      const message = typeof error?.message === 'string' 
+        ? error.message 
+        : (error?.response?.data?.error?.message || error?.response?.data?.message || 'Failed to match diagnoses');
       dispatch(displayNotification({ message, type: 'error' }));
       return rejectWithValue(message);
     }
@@ -128,18 +135,21 @@ const triageSlice = createSlice({
       })
       .addCase(matchDiagnoses.fulfilled, (state, action) => {
         state.loading = false;
-        state.matchedDiagnoses = action.payload.data || [];
-        state.matchCount = action.payload.count || 0;
-        state.matchQuery = action.payload.query || null;
-        state.matchPagination = action.payload.pagination || null;
+        // Ensure all values are properly structured
+        state.matchedDiagnoses = Array.isArray(action.payload?.data) ? action.payload.data : [];
+        state.matchCount = typeof action.payload?.count === 'number' ? action.payload.count : 0;
+        state.matchQuery = action.payload?.query && typeof action.payload.query === 'object' ? action.payload.query : null;
+        state.matchPagination = action.payload?.pagination && typeof action.payload.pagination === 'object' ? action.payload.pagination : null;
         state.error = null;
       })
       .addCase(matchDiagnoses.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        // Ensure error is always a string, not an object
+        state.error = typeof action.payload === 'string' ? action.payload : (action.payload?.message || 'Failed to match diagnoses');
         state.matchedDiagnoses = [];
         state.matchCount = 0;
         state.matchPagination = null;
+        state.matchQuery = null;
       })
       // Create triage
       .addCase(createTriage.pending, (state) => {

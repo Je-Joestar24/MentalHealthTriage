@@ -60,33 +60,35 @@ export default function TriageRightPanel() {
     const handlePageChange = useCallback((event, page) => {
         if (!matchPagination) return;
         
-        // Get current system filter and symptoms from matchQuery
+        // Get current system filter, symptoms, and triage filters from matchQuery
         const system = matchQuery?.system || null;
         const symptoms = matchQuery?.symptoms || [];
         const showAll = matchQuery?.showAll || (symptoms.length === 0);
+        const triageFilters = matchQuery?.filters || {};
         
         matchDiagnosesAction(symptoms, system, {
             page,
             limit: limit,
             showAll
-        });
+        }, triageFilters);
     }, [matchPagination, matchQuery, matchDiagnosesAction, limit]);
 
     const handleLimitChange = useCallback((event) => {
         const newLimit = event.target.value;
         setLimit(newLimit);
         
-        // Get current system filter and symptoms from matchQuery
+        // Get current system filter, symptoms, and triage filters from matchQuery
         const system = matchQuery?.system || null;
         const symptoms = matchQuery?.symptoms || [];
         const showAll = matchQuery?.showAll || (symptoms.length === 0);
+        const triageFilters = matchQuery?.filters || {};
         
         // Reset to page 1 when limit changes
         matchDiagnosesAction(symptoms, system, {
             page: 1,
             limit: newLimit,
             showAll
-        });
+        }, triageFilters);
     }, [matchQuery, matchDiagnosesAction]);
 
     if (loading && matchedDiagnoses.length === 0) {
@@ -125,7 +127,7 @@ export default function TriageRightPanel() {
                     Diagnosis Options
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-                    Ranked by symptom matches; filtered by duration & course.
+                    Ranked by symptom and filter matches. Shows diagnoses matching symptoms OR filters.
                 </Typography>
             </Box>
 
@@ -165,7 +167,7 @@ export default function TriageRightPanel() {
                             No diagnoses matched yet.
                         </Typography>
                         <Typography variant="caption" sx={{ fontSize: '0.75rem' }}>
-                            Enter symptoms to see matching diagnoses.
+                            Enter symptoms or set filters (duration, course, severity) to see matching diagnoses.
                         </Typography>
                     </Box>
                 ) : (
@@ -223,17 +225,43 @@ export default function TriageRightPanel() {
                                                 {diagnosis.icd10Code && ` / ${diagnosis.icd10Code}`}
                                             </Typography>
                                         </Box>
-                                        <Stack direction="row" spacing={0.5} alignItems="center">
-                                            <Chip
-                                                label={`${diagnosis.matchCount || 0} symptom${(diagnosis.matchCount || 0) !== 1 ? 's' : ''} matched`}
-                                                size="small"
-                                                color={diagnosis.matchCount > 0 ? 'primary' : 'default'}
-                                                sx={{
-                                                    fontSize: '0.7rem',
-                                                    height: 22,
-                                                    ml: 1
-                                                }}
-                                            />
+                                        <Stack direction="row" spacing={0.5} alignItems="center" flexWrap="wrap">
+                                            {diagnosis.matchCount > 0 && (
+                                                <Chip
+                                                    label={`${diagnosis.matchCount} symptom${diagnosis.matchCount !== 1 ? 's' : ''}`}
+                                                    size="small"
+                                                    color="primary"
+                                                    sx={{
+                                                        fontSize: '0.7rem',
+                                                        height: 22,
+                                                        ml: 1
+                                                    }}
+                                                />
+                                            )}
+                                            {diagnosis.filterMatchCount > 0 && (
+                                                <Chip
+                                                    label={`${diagnosis.filterMatchCount}/${diagnosis.totalFilters} filters`}
+                                                    size="small"
+                                                    color="success"
+                                                    sx={{
+                                                        fontSize: '0.7rem',
+                                                        height: 22,
+                                                        ml: diagnosis.matchCount > 0 ? 0.5 : 1
+                                                    }}
+                                                />
+                                            )}
+                                            {diagnosis.matchCount === 0 && diagnosis.filterMatchCount === 0 && (
+                                                <Chip
+                                                    label="No matches"
+                                                    size="small"
+                                                    color="default"
+                                                    sx={{
+                                                        fontSize: '0.7rem',
+                                                        height: 22,
+                                                        ml: 1
+                                                    }}
+                                                />
+                                            )}
                                             <Tooltip title="View notes" arrow>
                                                 <IconButton
                                                     size="small"
@@ -321,6 +349,96 @@ export default function TriageRightPanel() {
                                         </Box>
                                     )}
 
+                                    {/* Filter Match Indicators */}
+                                    {diagnosis.filterMatches && Object.keys(diagnosis.filterMatches).length > 0 && (
+                                        <Box sx={{ mb: 1 }}>
+                                            <Typography
+                                                variant="caption"
+                                                color="text.secondary"
+                                                sx={{ fontSize: '0.7rem', display: 'block', mb: 0.5 }}
+                                            >
+                                                Filter Matches:
+                                            </Typography>
+                                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                                {diagnosis.filterMatches.duration !== undefined && (
+                                                    <Chip
+                                                        label={`Duration ${diagnosis.filterMatches.duration ? '✓' : '✗'}`}
+                                                        size="small"
+                                                        color={diagnosis.filterMatches.duration ? 'success' : 'default'}
+                                                        variant={diagnosis.filterMatches.duration ? 'filled' : 'outlined'}
+                                                        sx={{
+                                                            fontSize: '0.65rem',
+                                                            height: 20,
+                                                            '& .MuiChip-label': {
+                                                                px: 0.5
+                                                            }
+                                                        }}
+                                                    />
+                                                )}
+                                                {diagnosis.filterMatches.course !== undefined && (
+                                                    <Chip
+                                                        label={`Course ${diagnosis.filterMatches.course ? '✓' : '✗'}`}
+                                                        size="small"
+                                                        color={diagnosis.filterMatches.course ? 'success' : 'default'}
+                                                        variant={diagnosis.filterMatches.course ? 'filled' : 'outlined'}
+                                                        sx={{
+                                                            fontSize: '0.65rem',
+                                                            height: 20,
+                                                            '& .MuiChip-label': {
+                                                                px: 0.5
+                                                            }
+                                                        }}
+                                                    />
+                                                )}
+                                                {diagnosis.filterMatches.severity !== undefined && (
+                                                    <Chip
+                                                        label={`Severity ${diagnosis.filterMatches.severity ? '✓' : '✗'}`}
+                                                        size="small"
+                                                        color={diagnosis.filterMatches.severity ? 'success' : 'default'}
+                                                        variant={diagnosis.filterMatches.severity ? 'filled' : 'outlined'}
+                                                        sx={{
+                                                            fontSize: '0.65rem',
+                                                            height: 20,
+                                                            '& .MuiChip-label': {
+                                                                px: 0.5
+                                                            }
+                                                        }}
+                                                    />
+                                                )}
+                                                {diagnosis.filterMatches.preliminaryDiagnosis !== undefined && (
+                                                    <Chip
+                                                        label={`Prelim. Dx ${diagnosis.filterMatches.preliminaryDiagnosis ? '✓' : '✗'}`}
+                                                        size="small"
+                                                        color={diagnosis.filterMatches.preliminaryDiagnosis ? 'success' : 'default'}
+                                                        variant={diagnosis.filterMatches.preliminaryDiagnosis ? 'filled' : 'outlined'}
+                                                        sx={{
+                                                            fontSize: '0.65rem',
+                                                            height: 20,
+                                                            '& .MuiChip-label': {
+                                                                px: 0.5
+                                                            }
+                                                        }}
+                                                    />
+                                                )}
+                                                {diagnosis.filterMatches.notes !== undefined && (
+                                                    <Chip
+                                                        label={`Notes ${diagnosis.filterMatches.notes ? '✓' : '✗'}`}
+                                                        size="small"
+                                                        color={diagnosis.filterMatches.notes ? 'success' : 'default'}
+                                                        variant={diagnosis.filterMatches.notes ? 'filled' : 'outlined'}
+                                                        sx={{
+                                                            fontSize: '0.65rem',
+                                                            height: 20,
+                                                            '& .MuiChip-label': {
+                                                                px: 0.5
+                                                            }
+                                                        }}
+                                                    />
+                                                )}
+                                            </Box>
+                                        </Box>
+                                    )}
+
                                     {/* Duration & Course */}
                                     <Stack direction="row" spacing={2} flexWrap="wrap">
                                         {diagnosis.typicalDuration && (
@@ -355,6 +473,25 @@ export default function TriageRightPanel() {
                                                     sx={{ fontSize: '0.75rem', fontWeight: 500 }}
                                                 >
                                                     {diagnosis.course}
+                                                </Typography>
+                                            </Box>
+                                        )}
+                                        {diagnosis.severity && (
+                                            <Box>
+                                                <Typography
+                                                    variant="caption"
+                                                    color="text.secondary"
+                                                    sx={{ fontSize: '0.7rem', display: 'block' }}
+                                                >
+                                                    Severity:
+                                                </Typography>
+                                                <Typography
+                                                    variant="body2"
+                                                    sx={{ fontSize: '0.75rem', fontWeight: 500 }}
+                                                >
+                                                    {Array.isArray(diagnosis.severity) 
+                                                        ? diagnosis.severity.join(', ') 
+                                                        : diagnosis.severity}
                                                 </Typography>
                                             </Box>
                                         )}

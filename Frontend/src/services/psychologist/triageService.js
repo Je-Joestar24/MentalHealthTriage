@@ -3,13 +3,14 @@ import api from '../../api/axios';
 const BASE_URL = '/api/psychologist/triage';
 
 /**
- * Match diagnoses based on symptoms
+ * Match diagnoses based on symptoms and triage filters
  * @param {Array<string>} symptoms - Array of symptom strings
  * @param {string} system - Optional: 'DSM-5' or 'ICD-10'
  * @param {Object} queryParams - Optional: { page, limit, showAll }
+ * @param {Object} triageFilters - Optional: { duration, durationUnit, course, severityLevel, preliminaryDiagnosis, notes }
  * @returns {Promise<{success: boolean, data?: Array, pagination?: Object, error?: string, count?: number}>}
  */
-export const matchDiagnoses = async (symptoms = [], system = null, queryParams = {}) => {
+export const matchDiagnoses = async (symptoms = [], system = null, queryParams = {}, triageFilters = {}) => {
   try {
     const params = new URLSearchParams();
     
@@ -36,18 +37,36 @@ export const matchDiagnoses = async (symptoms = [], system = null, queryParams =
       params.append('showAll', queryParams.showAll);
     }
     
+    // Add triage filter params
+    if (triageFilters.duration !== undefined && triageFilters.duration !== null && triageFilters.duration !== '') {
+      params.append('duration', triageFilters.duration);
+    }
+    if (triageFilters.durationUnit) {
+      params.append('durationUnit', triageFilters.durationUnit);
+    }
+    if (triageFilters.course) {
+      params.append('course', triageFilters.course);
+    }
+    if (triageFilters.severityLevel) {
+      params.append('severityLevel', triageFilters.severityLevel);
+    }
+    if (triageFilters.preliminaryDiagnosis) {
+      params.append('preliminaryDiagnosis', triageFilters.preliminaryDiagnosis);
+    }
+    if (triageFilters.notes) {
+      params.append('notes', triageFilters.notes);
+    }
+    
     const queryString = params.toString();
     const url = `${BASE_URL}/match-diagnoses${queryString ? `?${queryString}` : ''}`;
     
-    // Use GET method for query params, or POST if symptoms are in body
-    let response;
-    if (symptoms && symptoms.length > 0 && !queryString.includes('symptoms=')) {
-      // POST with body if symptoms array is large
-      response = await api.post(url, { symptoms });
-    } else {
-      // GET with query params
-      response = await api.get(url);
-    }
+    // Use POST method to send triage filters in body for better handling
+    const body = {
+      ...(symptoms && symptoms.length > 0 && { symptoms }),
+      ...triageFilters
+    };
+    
+    const response = await api.post(url, body);
     
     const { data } = response;
     return {
@@ -55,11 +74,23 @@ export const matchDiagnoses = async (symptoms = [], system = null, queryParams =
       data: data.data || [],
       pagination: data.pagination || null,
       count: data.count || 0,
-      query: data.query
+      query: data.query || null
     };
   } catch (error) {
-    const message = error?.response?.data?.error || error.message || 'Failed to match diagnoses';
-    return { success: false, error: message };
+    // Handle error response - could be string or object
+    let errorMessage = 'Failed to match diagnoses';
+    if (error?.response?.data) {
+      if (typeof error.response.data.error === 'string') {
+        errorMessage = error.response.data.error;
+      } else if (error.response.data.error?.message) {
+        errorMessage = error.response.data.error.message;
+      } else if (error.response.data.message) {
+        errorMessage = error.response.data.message;
+      }
+    } else if (error?.message) {
+      errorMessage = error.message;
+    }
+    return { success: false, error: errorMessage };
   }
 };
 

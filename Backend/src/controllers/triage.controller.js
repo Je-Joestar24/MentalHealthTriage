@@ -114,27 +114,39 @@ export const createTriage = asyncWrapper(async (req, res) => {
 
 /**
  * GET /api/psychologist/triage/match-diagnoses
- * Match diagnoses based on symptoms
+ * Match diagnoses based on symptoms and triage filters
  * Query params: symptoms (comma-separated or array), system (DSM-5 or ICD-10), page, limit, showAll
+ * Triage filters: duration, durationUnit, course, severityLevel, preliminaryDiagnosis, notes
  */
 export const matchDiagnoses = asyncWrapper(async (req, res) => {
-  const { symptoms, system, page, limit, showAll } = req.query;
+  // Extract from query params
+  const { symptoms: querySymptoms, system, page, limit, showAll } = req.query;
+  let { duration, durationUnit, course, severityLevel, preliminaryDiagnosis, notes } = req.query;
   const user = req.user;
 
   // Parse symptoms from query
   let symptomsArray = [];
-  if (symptoms) {
-    if (Array.isArray(symptoms)) {
-      symptomsArray = symptoms;
-    } else if (typeof symptoms === 'string') {
+  if (querySymptoms) {
+    if (Array.isArray(querySymptoms)) {
+      symptomsArray = querySymptoms;
+    } else if (typeof querySymptoms === 'string') {
       // Support comma-separated or space-separated
-      symptomsArray = symptoms.split(/[,\s]+/).filter(s => s.trim().length > 0);
+      symptomsArray = querySymptoms.split(/[,\s]+/).filter(s => s.trim().length > 0);
     }
   }
 
-  // Also check body for symptoms (in case POST is used)
-  if (req.body && req.body.symptoms && Array.isArray(req.body.symptoms)) {
-    symptomsArray = req.body.symptoms;
+  // Also check body for symptoms and triage filters (in case POST is used)
+  if (req.body) {
+    if (req.body.symptoms && Array.isArray(req.body.symptoms)) {
+      symptomsArray = req.body.symptoms;
+    }
+    // Override query params with body params if provided
+    if (req.body.duration !== undefined) duration = req.body.duration;
+    if (req.body.durationUnit !== undefined) durationUnit = req.body.durationUnit;
+    if (req.body.course !== undefined) course = req.body.course;
+    if (req.body.severityLevel !== undefined) severityLevel = req.body.severityLevel;
+    if (req.body.preliminaryDiagnosis !== undefined) preliminaryDiagnosis = req.body.preliminaryDiagnosis;
+    if (req.body.notes !== undefined) notes = req.body.notes;
   }
 
   // Build query params
@@ -144,8 +156,29 @@ export const matchDiagnoses = asyncWrapper(async (req, res) => {
     showAll: showAll === 'true' || showAll === true
   };
 
+  // Build triage filters
+  const triageFilters = {};
+  if (duration !== undefined && duration !== null && duration !== '') {
+    triageFilters.duration = parseFloat(duration);
+  }
+  if (durationUnit) {
+    triageFilters.durationUnit = durationUnit;
+  }
+  if (course) {
+    triageFilters.course = course;
+  }
+  if (severityLevel) {
+    triageFilters.severityLevel = severityLevel;
+  }
+  if (preliminaryDiagnosis) {
+    triageFilters.preliminaryDiagnosis = preliminaryDiagnosis;
+  }
+  if (notes) {
+    triageFilters.notes = notes;
+  }
+
   // If no symptoms and showAll is false, return empty
-  if (symptomsArray.length === 0 && !queryParams.showAll) {
+  if (symptomsArray.length === 0 && !queryParams.showAll && Object.keys(triageFilters).length === 0) {
     return res.json({
       success: true,
       data: [],
@@ -158,11 +191,16 @@ export const matchDiagnoses = asyncWrapper(async (req, res) => {
         hasPrevPage: false
       },
       count: 0,
-      message: 'No symptoms provided'
+      query: {
+        symptoms: symptomsArray,
+        system: system || 'all',
+        showAll: queryParams.showAll,
+        filters: triageFilters
+      }
     });
   }
 
-  const result = await triageService.matchDiagnoses(symptomsArray, system, user, queryParams);
+  const result = await triageService.matchDiagnoses(symptomsArray, system, user, queryParams, triageFilters);
 
   res.json({
     success: true,
@@ -172,7 +210,8 @@ export const matchDiagnoses = asyncWrapper(async (req, res) => {
     query: {
       symptoms: symptomsArray,
       system: system || 'all',
-      showAll: queryParams.showAll
+      showAll: queryParams.showAll,
+      filters: triageFilters
     }
   });
 });

@@ -29,9 +29,10 @@ const requirePsychologist = (req, res, next) => {
 
 router.use(authenticateToken);
 
-// GET /api/psychologist/triage/match-diagnoses - Match diagnoses based on symptoms
-// Query params: ?symptoms=depression,anxiety&system=DSM-5
-// Or POST with body: { symptoms: ['depression', 'anxiety'], system: 'DSM-5' }
+// GET /api/psychologist/triage/match-diagnoses - Match diagnoses based on symptoms and triage filters
+// Query params: ?symptoms=depression,anxiety&system=DSM-5&duration=2&durationUnit=months&course=Continuous&severityLevel=moderate
+// Or POST with body: { symptoms: ['depression', 'anxiety'], system: 'DSM-5', duration: 2, durationUnit: 'months', course: 'Continuous', severityLevel: 'moderate', preliminaryDiagnosis: '...', notes: '...' }
+// Triage filters: duration, durationUnit (days/weeks/months/years), course (Continuous/Episodic/Either), severityLevel (low/moderate/high), preliminaryDiagnosis, notes
 // Only psychologists can match diagnoses (for triaging)
 router.get('/match-diagnoses', requirePsychologist, matchDiagnoses);
 router.post('/match-diagnoses', requirePsychologist, matchDiagnoses);

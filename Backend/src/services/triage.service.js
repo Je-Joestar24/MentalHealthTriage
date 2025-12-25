@@ -72,10 +72,106 @@ function deduplicateSymptoms(symptoms) {
 }
 
 /**
- * Match diagnoses based on symptoms
+ * Convert duration to days for comparison
+ */
+function convertToDays(value, unit) {
+  if (!value || !unit) return null;
+  const numValue = parseFloat(value);
+  if (isNaN(numValue)) return null;
+  
+  switch (unit.toLowerCase()) {
+    case 'days':
+      return numValue;
+    case 'weeks':
+      return numValue * 7;
+    case 'months':
+      return numValue * 30; // Approximate: 30 days per month
+    case 'years':
+      return numValue * 365; // Approximate: 365 days per year
+    default:
+      return null;
+  }
+}
+
+/**
+ * Check if triage duration matches diagnosis typicalDuration
+ */
+function matchesDuration(triageDuration, triageUnit, diagnosisDuration) {
+  if (!triageDuration || !triageUnit || !diagnosisDuration) return true; // No filter if not provided
+  
+  const triageDays = convertToDays(triageDuration, triageUnit);
+  if (triageDays === null) return true;
+  
+  const diagnosisMin = diagnosisDuration.min !== null && diagnosisDuration.min !== undefined 
+    ? convertToDays(diagnosisDuration.min, diagnosisDuration.unit || 'months')
+    : null;
+  const diagnosisMax = diagnosisDuration.max !== null && diagnosisDuration.max !== undefined
+    ? convertToDays(diagnosisDuration.max, diagnosisDuration.unit || 'months')
+    : null;
+  
+  // If diagnosis has no duration range, allow it
+  if (diagnosisMin === null && diagnosisMax === null) return true;
+  
+  // Check if triage duration falls within diagnosis range
+  // Allow some flexibility: ±20% tolerance
+  const tolerance = 0.2;
+  if (diagnosisMin !== null && diagnosisMax !== null) {
+    const minWithTolerance = diagnosisMin * (1 - tolerance);
+    const maxWithTolerance = diagnosisMax * (1 + tolerance);
+    return triageDays >= minWithTolerance && triageDays <= maxWithTolerance;
+  } else if (diagnosisMin !== null) {
+    const minWithTolerance = diagnosisMin * (1 - tolerance);
+    return triageDays >= minWithTolerance;
+  } else if (diagnosisMax !== null) {
+    const maxWithTolerance = diagnosisMax * (1 + tolerance);
+    return triageDays <= maxWithTolerance;
+  }
+  
+  return true;
+}
+
+/**
+ * Check if course matches
+ */
+function matchesCourse(triageCourse, diagnosisCourse) {
+  if (!triageCourse || !diagnosisCourse) return true; // No filter if not provided
+  // If diagnosis course is 'Either', it matches any triage course
+  if (diagnosisCourse === 'Either') return true;
+  // Otherwise, exact match required
+  return triageCourse === diagnosisCourse;
+}
+
+/**
+ * Check if severity matches
+ */
+function matchesSeverity(triageSeverity, diagnosisSeverity) {
+  if (!triageSeverity || !diagnosisSeverity) return true; // No filter if not provided
+  
+  // Handle both string and array severity in diagnosis
+  if (Array.isArray(diagnosisSeverity)) {
+    return diagnosisSeverity.some(sev => 
+      sev.toLowerCase() === triageSeverity.toLowerCase()
+    );
+  }
+  
+  return diagnosisSeverity.toLowerCase() === triageSeverity.toLowerCase();
+}
+
+/**
+ * Check if text matches (for preliminaryDiagnosis and notes)
+ */
+function matchesText(searchText, targetText) {
+  if (!searchText || !targetText) return true; // No filter if not provided
+  const searchLower = searchText.toLowerCase().trim();
+  const targetLower = String(targetText).toLowerCase();
+  return targetLower.includes(searchLower);
+}
+
+/**
+ * Match diagnoses based on symptoms and triage filters
  * Returns diagnoses with match counts (including 0 matches with pagination)
  */
-export async function matchDiagnoses(symptoms = [], systemFilter = null, user = null, queryParams = {}) {
+export async function matchDiagnoses(symptoms = [], systemFilter = null, user = null, queryParams = {}, triageFilters = {}) {
   const {
     page = 1,
     limit = 20,
@@ -247,7 +343,7 @@ export async function matchDiagnoses(symptoms = [], systemFilter = null, user = 
   ]);
 
   // Calculate match scores and enrich with match information
-  const matchedDiagnoses = diagnoses.map(diagnosis => {
+  let matchedDiagnoses = diagnoses.map(diagnosis => {
     const diagnosisSymptoms = (diagnosis.symptoms || []).map(normalizeSymptom);
     
     // Count unique diagnosis symptoms that matched (not input symptoms)
@@ -269,24 +365,126 @@ export async function matchDiagnoses(symptoms = [], systemFilter = null, user = 
       ? (matchCount / diagnosisSymptoms.length) * 100
       : 0;
 
+    // Calculate triage filter matches (for ranking, not filtering)
+    let filterMatchCount = 0;
+    let totalFilters = 0;
+    const filterMatches = {};
+
+    if (Object.keys(triageFilters).length > 0) {
+      // Check duration match
+      if (triageFilters.duration !== undefined && triageFilters.durationUnit) {
+        totalFilters++;
+        const matches = matchesDuration(
+          triageFilters.duration,
+          triageFilters.durationUnit,
+          diagnosis.typicalDuration
+        );
+        filterMatches.duration = matches;
+        if (matches) filterMatchCount++;
+      }
+
+      // Check course match
+      if (triageFilters.course) {
+        totalFilters++;
+        const matches = matchesCourse(triageFilters.course, diagnosis.course);
+        filterMatches.course = matches;
+        if (matches) filterMatchCount++;
+      }
+
+      // Check severity match
+      if (triageFilters.severityLevel) {
+        totalFilters++;
+        const matches = matchesSeverity(triageFilters.severityLevel, diagnosis.severity);
+        filterMatches.severity = matches;
+        if (matches) filterMatchCount++;
+      }
+
+      // Check preliminaryDiagnosis match (text search)
+      if (triageFilters.preliminaryDiagnosis) {
+        totalFilters++;
+        const searchText = triageFilters.preliminaryDiagnosis;
+        const matchesName = matchesText(searchText, diagnosis.name);
+        const matchesKeySymptoms = matchesText(searchText, diagnosis.keySymptomsSummary);
+        const matchesFullCriteria = matchesText(searchText, diagnosis.fullCriteriaSummary);
+        const matches = matchesName || matchesKeySymptoms || matchesFullCriteria;
+        filterMatches.preliminaryDiagnosis = matches;
+        if (matches) filterMatchCount++;
+      }
+
+      // Check notes match (text search)
+      if (triageFilters.notes) {
+        totalFilters++;
+        const searchText = triageFilters.notes;
+        const matchesNotes = matchesText(searchText, diagnosis.notes);
+        const matchesKeySymptoms = matchesText(searchText, diagnosis.keySymptomsSummary);
+        const matchesFullCriteria = matchesText(searchText, diagnosis.fullCriteriaSummary);
+        const matches = matchesNotes || matchesKeySymptoms || matchesFullCriteria;
+        filterMatches.notes = matches;
+        if (matches) filterMatchCount++;
+      }
+    }
+
     return {
       ...diagnosis,
       matchedSymptoms: matchedInputSymptoms, // Input symptoms that matched
       matchedDiagnosisSymptoms, // Diagnosis symptoms that matched
-      matchCount,
+      matchCount, // Symptom match count (primary)
       matchPercentage: Math.round(matchPercentage * 100) / 100,
-      allSymptoms: diagnosisSymptoms
+      allSymptoms: diagnosisSymptoms,
+      filterMatchCount, // How many triage filters matched
+      totalFilters, // Total number of triage filters applied
+      filterMatches // Detailed filter match info
     };
   });
 
-  // Sort: first by match count (desc), then by match percentage (desc), then by creation date (desc)
+  // Filter: Show diagnoses that have at least one symptom match OR at least one filter match
+  // OR if showAll is true and no symptoms/filters provided, show all
+  const hasSymptoms = deduplicatedSymptoms.length > 0;
+  const hasFilters = Object.keys(triageFilters).length > 0;
+  
+  if (hasSymptoms || hasFilters || showAll) {
+    matchedDiagnoses = matchedDiagnoses.filter(diagnosis => {
+      // If showAll is true and no criteria provided, show all
+      if (showAll && !hasSymptoms && !hasFilters) {
+        return true;
+      }
+      
+      // Show if symptoms match OR filters match
+      const hasSymptomMatch = diagnosis.matchCount > 0;
+      const hasFilterMatch = diagnosis.filterMatchCount > 0;
+      
+      return hasSymptomMatch || hasFilterMatch;
+    });
+  } else {
+    // No symptoms, no filters, and showAll is false - show nothing
+    matchedDiagnoses = [];
+  }
+
+  // Calculate total match score (symptoms + filters) for sorting
+  matchedDiagnoses.forEach(diagnosis => {
+    diagnosis.totalMatchScore = diagnosis.matchCount + diagnosis.filterMatchCount;
+  });
+
+  // Sort: first by total match score (symptoms + filters), then by symptom match count, 
+  // then by filter match count, then by match percentage, then by creation date
   matchedDiagnoses.sort((a, b) => {
+    // Primary sort: total match score (symptoms + filters)
+    if (b.totalMatchScore !== a.totalMatchScore) {
+      return b.totalMatchScore - a.totalMatchScore;
+    }
+    // Secondary sort: symptom match count
     if (b.matchCount !== a.matchCount) {
       return b.matchCount - a.matchCount;
     }
+    // Tertiary sort: filter match count
+    if (b.filterMatchCount !== a.filterMatchCount) {
+      return b.filterMatchCount - a.filterMatchCount;
+    }
+    // Fourth sort: match percentage
     if (b.matchPercentage !== a.matchPercentage) {
       return b.matchPercentage - a.matchPercentage;
     }
+    // Final sort: creation date
     return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
   });
 

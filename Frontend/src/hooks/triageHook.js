@@ -17,23 +17,32 @@ const useTriage = () => {
   const triageState = useSelector((state) => state.triage);
 
   /**
-   * Match diagnoses based on symptoms
+   * Match diagnoses based on symptoms and triage filters
    * @param {Array<string>} symptoms - Array of symptom strings (optional if showAll=true)
    * @param {string} system - Optional: 'DSM-5' or 'ICD-10'
    * @param {Object} queryParams - Optional: { page, limit, showAll }
+   * @param {Object} triageFilters - Optional: { duration, durationUnit, course, severityLevel, preliminaryDiagnosis, notes }
    */
   const matchDiagnoses = useCallback(
-    async (symptoms = [], system = null, queryParams = {}) => {
-      // Allow empty symptoms if showAll is true
-      if (!queryParams.showAll && (!symptoms || !Array.isArray(symptoms) || symptoms.length === 0)) {
+    async (symptoms = [], system = null, queryParams = {}, triageFilters = {}) => {
+      // Allow empty symptoms if showAll is true or if triage filters are provided
+      const hasFilters = Object.keys(triageFilters).length > 0 && (
+        triageFilters.duration || 
+        triageFilters.course || 
+        triageFilters.severityLevel || 
+        triageFilters.preliminaryDiagnosis || 
+        triageFilters.notes
+      );
+      
+      if (!queryParams.showAll && !hasFilters && (!symptoms || !Array.isArray(symptoms) || symptoms.length === 0)) {
         dispatch(displayNotification({ 
-          message: 'Please provide at least one symptom', 
+          message: 'Please provide at least one symptom or filter', 
           type: 'warning' 
         }));
-        return { success: false, error: 'No symptoms provided' };
+        return { success: false, error: 'No symptoms or filters provided' };
       }
 
-      const result = await dispatch(matchDiagnosesThunk({ symptoms, system, queryParams }));
+      const result = await dispatch(matchDiagnosesThunk({ symptoms, system, queryParams, triageFilters }));
       return result;
     },
     [dispatch]
