@@ -1,8 +1,9 @@
 import express from 'express';
 import {
   getTriageRecords,
-//   getTriageById,
+  getTriageById,
   createTriage,
+  duplicateTriage,
 //   updateTriage,
 //   deleteTriage,
   matchDiagnoses
@@ -43,11 +44,17 @@ router.post('/match-diagnoses', requirePsychologist, matchDiagnoses);
 router.get('/patients/:patientId/triage', requirePsychologistOrCompanyAdmin, getTriageRecords);
 
 // GET /api/psychologist/patients/:patientId/triage/:triageId - Get a single triage record
-// router.get('/patients/:patientId/triage/:triageId', getTriageById);
+// Allow both psychologist and company_admin to view triage details
+router.get('/patients/:patientId/triage/:triageId', requirePsychologistOrCompanyAdmin, getTriageById);
 
 // POST /api/psychologist/patients/:patientId/triage - Create a new triage record
 // Only psychologists can create triages
 router.post('/patients/:patientId/triage', requirePsychologist, createTriage);
+
+// POST /api/psychologist/patients/:patientId/triage/:triageId/duplicate - Duplicate a triage record (create a copy)
+// The original triage remains unchanged - this creates a new record with optional modifications
+// Only psychologists can duplicate triages
+router.post('/patients/:patientId/triage/:triageId/duplicate', requirePsychologist, duplicateTriage);
 
 // PUT /api/psychologist/patients/:patientId/triage/:triageId - Update a triage record
 // router.put('/patients/:patientId/triage/:triageId', updateTriage);

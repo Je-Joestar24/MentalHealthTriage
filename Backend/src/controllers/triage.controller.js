@@ -24,18 +24,19 @@ export const getTriageRecords = asyncWrapper(async (req, res) => {
 /**
  * GET /api/psychologist/patients/:patientId/triage/:triageId
  * Get a single triage record
+ * Supports both psychologist and company_admin access
  */
-// export const getTriageById = asyncWrapper(async (req, res) => {
-//   const { patientId, triageId } = req.params;
-//   const psychologistId = req.user._id || req.user.id;
+export const getTriageById = asyncWrapper(async (req, res) => {
+  const { patientId, triageId } = req.params;
+  const user = req.user;
 
-//   const triage = await triageService.getTriageById(triageId, patientId, psychologistId);
+  const triage = await triageService.getTriageById(triageId, patientId, user);
 
-//   res.json({
-//     success: true,
-//     data: triage
-//   });
-// });
+  res.json({
+    success: true,
+    data: triage
+  });
+});
 
 /**
  * POST /api/psychologist/patients/:patientId/triage
@@ -67,6 +68,41 @@ export const createTriage = asyncWrapper(async (req, res) => {
     success: true,
     data: triage,
     message: 'Triage record created successfully'
+  });
+});
+
+/**
+ * POST /api/psychologist/patients/:patientId/triage/:triageId/duplicate
+ * Duplicate a triage record (create a copy with optional modifications)
+ * The original triage remains unchanged - this creates a new record
+ */
+export const duplicateTriage = asyncWrapper(async (req, res) => {
+  const { patientId, triageId } = req.params;
+  const psychologistId = req.user._id || req.user.id;
+  const updateData = req.body;
+
+  // Validate symptoms if provided
+  if (updateData.symptoms !== undefined && !Array.isArray(updateData.symptoms)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Symptoms must be an array'
+    });
+  }
+
+  // Validate severity level if provided
+  if (updateData.severityLevel !== undefined && !['low', 'moderate', 'high'].includes(updateData.severityLevel)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Severity level must be low, moderate, or high'
+    });
+  }
+
+  const newTriage = await triageService.duplicateTriage(triageId, patientId, updateData, psychologistId);
+
+  res.status(201).json({
+    success: true,
+    data: newTriage,
+    message: 'Triage record duplicated successfully'
   });
 });
 

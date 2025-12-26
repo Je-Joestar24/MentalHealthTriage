@@ -607,23 +607,49 @@ export async function getTriageRecords(patientId, user, queryParams = {}) {
 
 /**
  * Get a single triage record by ID
+ * Supports both psychologist and company_admin access
  */
-export async function getTriageById(triageId, patientId, psychologistId) {
-  // Verify patient belongs to psychologist
-  const patient = await Patient.findOne({
-    _id: patientId,
-    assignedPsychologist: psychologistId
-  });
+export async function getTriageById(triageId, patientId, user) {
+  const userId = user._id || user.id;
+  const organizationId = user.organization?._id || user.organization;
+
+  // Verify patient access based on user role
+  let patient;
+  if (user.role === 'company_admin') {
+    // Company admin: verify patient belongs to their organization
+    if (!organizationId) {
+      throw new Error('Company admin must belong to an organization');
+    }
+    patient = await Patient.findOne({
+      _id: patientId,
+      organization: organizationId
+    });
+  } else {
+    // Psychologist: verify patient is assigned to them
+    patient = await Patient.findOne({
+      _id: patientId,
+      assignedPsychologist: userId
+    });
+  }
 
   if (!patient) {
     throw new Error('Patient not found or access denied');
   }
 
-  const triage = await Triage.findOne({
+  // Build filter based on role
+  const filter = {
     _id: triageId,
-    patient: patientId,
-    psychologist: psychologistId
-  })
+    patient: patientId
+  };
+
+  // For psychologist: filter by their triages only
+  // For company_admin: show all triages for patients in their organization
+  if (user.role === 'psychologist') {
+    filter.psychologist = userId;
+  }
+  // Company admin can see all triages for patients in their organization (no psychologist filter)
+
+  const triage = await Triage.findOne(filter)
     .populate('patient', 'name age gender')
     .populate('psychologist', 'name email')
     .lean();
@@ -681,6 +707,66 @@ export async function createTriage(patientId, triageData, psychologistId) {
   await triage.populate('psychologist', 'name email');
 
   return triage;
+}
+
+/**
+ * Duplicate a triage record (create a copy with optional modifications)
+ * The original triage remains unchanged - this creates a new record
+ */
+export async function duplicateTriage(triageId, patientId, updateData, psychologistId) {
+  // Verify patient belongs to psychologist
+  const patient = await Patient.findOne({
+    _id: patientId,
+    assignedPsychologist: psychologistId
+  });
+
+  if (!patient) {
+    throw new Error('Patient not found or access denied');
+  }
+
+  // Verify psychologist exists
+  const psychologist = await User.findById(psychologistId);
+  if (!psychologist || psychologist.role !== 'psychologist') {
+    throw new Error('Psychologist not found');
+  }
+
+  // Find the original triage
+  const originalTriage = await Triage.findOne({
+    _id: triageId,
+    patient: patientId,
+    psychologist: psychologistId
+  }).lean();
+
+  if (!originalTriage) {
+    throw new Error('Triage record not found');
+  }
+
+  // Create a new triage record based on the original, with optional updates
+  const newTriage = new Triage({
+    patient: patientId,
+    psychologist: psychologistId,
+    symptoms: updateData.symptoms !== undefined ? updateData.symptoms : originalTriage.symptoms,
+    duration: updateData.duration !== undefined ? updateData.duration : originalTriage.duration,
+    durationUnit: updateData.durationUnit !== undefined ? updateData.durationUnit : originalTriage.durationUnit,
+    course: updateData.course !== undefined ? updateData.course : originalTriage.course,
+    preliminaryDiagnosis: updateData.preliminaryDiagnosis !== undefined ? updateData.preliminaryDiagnosis : originalTriage.preliminaryDiagnosis,
+    severityLevel: updateData.severityLevel !== undefined ? updateData.severityLevel : originalTriage.severityLevel,
+    notes: updateData.notes !== undefined ? updateData.notes : originalTriage.notes
+  });
+
+  await newTriage.save();
+
+  // Add new triage to patient's triageRecords array if not already present
+  if (!patient.triageRecords.includes(newTriage._id)) {
+    patient.triageRecords.push(newTriage._id);
+    await patient.save();
+  }
+
+  // Populate and return
+  await newTriage.populate('patient', 'name age gender');
+  await newTriage.populate('psychologist', 'name email');
+
+  return newTriage;
 }
 
 /**
