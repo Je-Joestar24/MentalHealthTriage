@@ -58,6 +58,30 @@ export const getTriageHistory = createAsyncThunk(
 );
 
 /**
+ * Get a single triage record by ID
+ */
+export const getTriageById = createAsyncThunk(
+  'triage/getTriageById',
+  async ({ patientId, triageId }, { rejectWithValue, dispatch }) => {
+    try {
+      const result = await triageService.getTriageById(patientId, triageId);
+      if (!result.success) {
+        dispatch(displayNotification({ 
+          message: result.error || 'Failed to fetch triage record', 
+          type: 'error' 
+        }));
+        return rejectWithValue(result.error || 'Failed to fetch triage record');
+      }
+      return result.data;
+    } catch (error) {
+      const message = error?.message || 'Failed to fetch triage record';
+      dispatch(displayNotification({ message, type: 'error' }));
+      return rejectWithValue(message);
+    }
+  }
+);
+
+/**
  * Create a new triage record
  */
 export const createTriage = createAsyncThunk(
@@ -85,12 +109,41 @@ export const createTriage = createAsyncThunk(
   }
 );
 
+/**
+ * Duplicate a triage record (create a copy with optional modifications)
+ */
+export const duplicateTriage = createAsyncThunk(
+  'triage/duplicateTriage',
+  async ({ patientId, triageId, triageData }, { rejectWithValue, dispatch }) => {
+    try {
+      const result = await triageService.duplicateTriage(patientId, triageId, triageData || {});
+      if (!result.success) {
+        dispatch(displayNotification({ 
+          message: result.error || 'Failed to duplicate triage record', 
+          type: 'error' 
+        }));
+        return rejectWithValue(result.error || 'Failed to duplicate triage record');
+      }
+      dispatch(displayNotification({ 
+        message: result.message || 'Triage record duplicated successfully', 
+        type: 'success' 
+      }));
+      return result.data;
+    } catch (error) {
+      const message = error?.message || 'Failed to duplicate triage record';
+      dispatch(displayNotification({ message, type: 'error' }));
+      return rejectWithValue(message);
+    }
+  }
+);
+
 const initialState = {
   matchedDiagnoses: [],
   matchCount: 0,
   matchQuery: null,
   matchPagination: null,
   currentTriage: null,
+  selectedTriage: null, // For viewing a single triage record
   triageHistory: [],
   triageHistoryPagination: null,
   triageHistoryCount: 0,
@@ -111,6 +164,9 @@ const triageSlice = createSlice({
     },
     clearCurrentTriage: (state) => {
       state.currentTriage = null;
+    },
+    clearSelectedTriage: (state) => {
+      state.selectedTriage = null;
     },
     clearMessages: (state) => {
       state.error = null;
@@ -168,6 +224,21 @@ const triageSlice = createSlice({
         state.error = action.payload;
         state.success = null;
       })
+      // Get triage by ID
+      .addCase(getTriageById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getTriageById.fulfilled, (state, action) => {
+        state.loading = false;
+        state.selectedTriage = action.payload;
+        state.error = null;
+      })
+      .addCase(getTriageById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.selectedTriage = null;
+      })
       // Get triage history
       .addCase(getTriageHistory.pending, (state) => {
         state.loading = true;
@@ -186,13 +257,31 @@ const triageSlice = createSlice({
         state.triageHistory = [];
         state.triageHistoryPagination = null;
         state.triageHistoryCount = 0;
+      })
+      // Duplicate triage
+      .addCase(duplicateTriage.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.success = null;
+      })
+      .addCase(duplicateTriage.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentTriage = action.payload;
+        state.success = 'Triage record duplicated successfully';
+        state.error = null;
+      })
+      .addCase(duplicateTriage.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.success = null;
       });
   }
 });
 
 export const { 
   clearMatchedDiagnoses, 
-  clearCurrentTriage, 
+  clearCurrentTriage,
+  clearSelectedTriage, 
   clearMessages,
   clearTriageHistory,
   setLoading 

@@ -131,6 +131,25 @@ export const getTriageHistory = async (patientId, queryParams = {}) => {
 };
 
 /**
+ * Get a single triage record by ID
+ * @param {string} patientId - Patient ID
+ * @param {string} triageId - Triage ID
+ * @returns {Promise<{success: boolean, data?: Object, error?: string}>}
+ */
+export const getTriageById = async (patientId, triageId) => {
+  try {
+    const { data } = await api.get(`${BASE_URL}/patients/${patientId}/triage/${triageId}`);
+    return {
+      success: data.success ?? true,
+      data: data.data
+    };
+  } catch (error) {
+    const message = error?.response?.data?.error || error.message || 'Failed to fetch triage record';
+    return { success: false, error: message };
+  }
+};
+
+/**
  * Create a new triage record for a patient
  * @param {string} patientId - Patient ID
  * @param {Object} triageData - Triage data
@@ -153,6 +172,35 @@ export const createTriage = async (patientId, triageData) => {
     };
   } catch (error) {
     const message = error?.response?.data?.error || error.message || 'Failed to create triage record';
+    return { success: false, error: message };
+  }
+};
+
+/**
+ * Duplicate a triage record (create a copy with optional modifications)
+ * The original triage remains unchanged - this creates a new record
+ * @param {string} patientId - Patient ID
+ * @param {string} triageId - Original triage ID to duplicate
+ * @param {Object} triageData - Optional: Modified triage data (if not provided, creates exact copy)
+ * @param {Array<string>} triageData.symptoms - Optional: Array of symptoms
+ * @param {string} triageData.severityLevel - Optional: 'low', 'moderate', or 'high'
+ * @param {number} triageData.duration - Optional: Duration value
+ * @param {string} triageData.durationUnit - Optional: 'days', 'weeks', 'months', 'years'
+ * @param {string} triageData.course - Optional: 'Continuous', 'Episodic', 'Either'
+ * @param {string} triageData.preliminaryDiagnosis - Optional: Preliminary diagnosis
+ * @param {string} triageData.notes - Optional: Additional notes
+ * @returns {Promise<{success: boolean, data?: Object, error?: string, message?: string}>}
+ */
+export const duplicateTriage = async (patientId, triageId, triageData = {}) => {
+  try {
+    const { data } = await api.post(`${BASE_URL}/patients/${patientId}/triage/${triageId}/duplicate`, triageData);
+    return {
+      success: data.success ?? true,
+      data: data.data,
+      message: data.message || 'Triage record duplicated successfully'
+    };
+  } catch (error) {
+    const message = error?.response?.data?.error || error.message || 'Failed to duplicate triage record';
     return { success: false, error: message };
   }
 };

@@ -2,10 +2,13 @@ import { useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   matchDiagnoses as matchDiagnosesThunk,
+  getTriageById as getTriageByIdThunk,
   createTriage as createTriageThunk,
+  duplicateTriage as duplicateTriageThunk,
   getTriageHistory as getTriageHistoryThunk,
   clearMatchedDiagnoses,
   clearCurrentTriage,
+  clearSelectedTriage,
   clearMessages,
   clearTriageHistory,
   setLoading
@@ -105,6 +108,85 @@ const useTriage = () => {
   }, [dispatch]);
 
   /**
+   * Clear selected triage
+   */
+  const clearSelected = useCallback(() => {
+    dispatch(clearSelectedTriage());
+  }, [dispatch]);
+
+  /**
+   * Get a single triage record by ID
+   * @param {string} patientId - Patient ID
+   * @param {string} triageId - Triage ID
+   */
+  const getTriageById = useCallback(
+    async (patientId, triageId) => {
+      if (!patientId) {
+        dispatch(displayNotification({ 
+          message: 'Client ID is required', 
+          type: 'error' 
+        }));
+        return { success: false, error: 'Client ID is required' };
+      }
+
+      if (!triageId) {
+        dispatch(displayNotification({ 
+          message: 'Triage ID is required', 
+          type: 'error' 
+        }));
+        return { success: false, error: 'Triage ID is required' };
+      }
+
+      const result = await dispatch(getTriageByIdThunk({ patientId, triageId }));
+      return result;
+    },
+    [dispatch]
+  );
+
+  /**
+   * Duplicate a triage record (create a copy with optional modifications)
+   * @param {string} patientId - Patient ID
+   * @param {string} triageId - Original triage ID to duplicate
+   * @param {Object} triageData - Optional: Modified triage data (if not provided, creates exact copy)
+   */
+  const duplicateTriage = useCallback(
+    async (patientId, triageId, triageData = {}) => {
+      if (!patientId) {
+        dispatch(displayNotification({ 
+          message: 'Client ID is required', 
+          type: 'error' 
+        }));
+        return { success: false, error: 'Client ID is required' };
+      }
+
+      if (!triageId) {
+        dispatch(displayNotification({ 
+          message: 'Triage ID is required', 
+          type: 'error' 
+        }));
+        return { success: false, error: 'Triage ID is required' };
+      }
+
+      if (triageData.symptoms !== undefined && !Array.isArray(triageData.symptoms)) {
+        dispatch(displayNotification({ 
+          message: 'Symptoms must be an array', 
+          type: 'error' 
+        }));
+        return { success: false, error: 'Symptoms must be an array' };
+      }
+
+      dispatch(setGlobalLoading(true));
+      try {
+        const result = await dispatch(duplicateTriageThunk({ patientId, triageId, triageData }));
+        return result;
+      } finally {
+        dispatch(setGlobalLoading(false));
+      }
+    },
+    [dispatch]
+  );
+
+  /**
    * Get triage history for a patient
    * @param {string} patientId - Patient ID
    * @param {Object} queryParams - Query parameters (page, limit, search, sortBy, sortOrder)
@@ -146,6 +228,7 @@ const useTriage = () => {
     matchQuery: triageState.matchQuery,
     matchPagination: triageState.matchPagination,
     currentTriage: triageState.currentTriage,
+    selectedTriage: triageState.selectedTriage,
     triageHistory: triageState.triageHistory,
     triageHistoryPagination: triageState.triageHistoryPagination,
     triageHistoryCount: triageState.triageHistoryCount,
@@ -155,10 +238,13 @@ const useTriage = () => {
     
     // Actions
     matchDiagnoses,
+    getTriageById,
     createTriage,
+    duplicateTriage,
     getTriageHistory,
     clearMatched,
     clearTriage,
+    clearSelected,
     clearHistory,
     clearAllMessages
   };
