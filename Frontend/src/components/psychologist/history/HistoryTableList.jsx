@@ -11,8 +11,11 @@ import {
   TableContainer,
   Stack,
   Chip,
-  Skeleton
+  Skeleton,
+  IconButton,
+  Tooltip
 } from '@mui/material';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 
 const formatDate = (value) => {
   if (!value) return '—';
@@ -48,26 +51,27 @@ const EmptyState = () => (
 );
 
 const LoadingState = () => (
-  <TableBody>
-    {Array.from({ length: 5 }).map((_, idx) => (
-      <TableRow key={`loading-${idx}`}>
-        <TableCell colSpan={6}>
-          <Skeleton variant="rounded" height={48} />
-        </TableCell>
-      </TableRow>
-    ))}
-  </TableBody>
+      <TableBody>
+        {Array.from({ length: 5 }).map((_, idx) => (
+          <TableRow key={`loading-${idx}`}>
+            <TableCell colSpan={7}>
+              <Skeleton variant="rounded" height={48} />
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
 );
 
 const HistoryTableList = ({
   rows = [],
-  loading = false
+  loading = false,
+  onView
 }) => {
   return (
     <Card elevation={0} sx={{ borderRadius: 2, border: (theme) => `1px solid ${theme.palette.divider}` }}>
       <TableContainer>
         <Table size="small">
-          <TableHead>
+            <TableHead>
             <TableRow>
               <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Symptoms</TableCell>
@@ -75,6 +79,7 @@ const HistoryTableList = ({
               <TableCell sx={{ fontWeight: 600 }}>Preliminary Diagnosis</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Duration</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Notes</TableCell>
+              <TableCell sx={{ fontWeight: 600, width: 80 }} align="center">Actions</TableCell>
             </TableRow>
           </TableHead>
           {loading ? (
@@ -82,7 +87,7 @@ const HistoryTableList = ({
           ) : rows.length === 0 ? (
             <TableBody>
               <TableRow>
-                <TableCell colSpan={6}>
+                <TableCell colSpan={7}>
                   <EmptyState />
                 </TableCell>
               </TableRow>
@@ -96,8 +101,10 @@ const HistoryTableList = ({
                     '&:hover': {
                       bgcolor: 'action.hover'
                     },
-                    transition: 'background-color 0.2s ease'
+                    transition: 'background-color 0.2s ease',
+                    cursor: 'pointer'
                   }}
+                  onClick={() => onView && onView(row)}
                 >
                   <TableCell>
                     <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
@@ -181,6 +188,24 @@ const HistoryTableList = ({
                     >
                       {row.notes || '—'}
                     </Typography>
+                  </TableCell>
+                  <TableCell align="center" onClick={(e) => e.stopPropagation()}>
+                    <Tooltip title="View details" arrow>
+                      <IconButton
+                        size="small"
+                        onClick={() => onView && onView(row)}
+                        sx={{
+                          color: 'primary.main',
+                          '&:hover': {
+                            bgcolor: 'primary.light',
+                            color: 'white'
+                          }
+                        }}
+                        aria-label="View triage details"
+                      >
+                        <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
+                      </IconButton>
+                    </Tooltip>
                   </TableCell>
                 </TableRow>
               ))}

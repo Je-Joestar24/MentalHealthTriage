@@ -14,12 +14,25 @@ import useTriage from '../../../hooks/triageHook';
 import TriageLeftPanel from './TriageLeftPanel';
 import TriageRightPanel from './TriageRightPanel';
 
-export default function StartTriage() {
+export default function StartTriage({ triageId: propTriageId }) {
     const navigate = useNavigate();
-    const { id } = useParams();
+    const { id, triageId: routeTriageId } = useParams();
+    const triageId = propTriageId || routeTriageId;
+    const isEditMode = !!triageId;
+    
     const { currentPatient, loadPatientById, loading } = usePatients();
-    const { createTriage, clearMatched, clearAllMessages } = useTriage();
+    const { 
+        createTriage, 
+        duplicateTriage, 
+        getTriageById, 
+        selectedTriage,
+        clearMatched, 
+        clearAllMessages,
+        clearSelected 
+    } = useTriage();
     const [showDetails, setShowDetails] = useState(false);
+    const [loadingTriage, setLoadingTriage] = useState(false);
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -28,10 +41,22 @@ export default function StartTriage() {
         return () => {
             clearMatched();
             clearAllMessages();
+            clearSelected();
         };
-    }, [id, loadPatientById, clearMatched, clearAllMessages]);
+    }, [id, loadPatientById, clearMatched, clearAllMessages, clearSelected]);
+
+    // Fetch triage data if in edit mode
+    useEffect(() => {
+        if (isEditMode && id && triageId) {
+            setLoadingTriage(true);
+            getTriageById(id, triageId).finally(() => {
+                setLoadingTriage(false);
+            });
+        }
+    }, [isEditMode, id, triageId, getTriageById]);
 
     const handleBack = () => {
+        if (saving) return; // Prevent navigation during save
         navigate('/psychologist/triage');
     };
 
@@ -40,21 +65,41 @@ export default function StartTriage() {
     };
 
     const handleSaveTriage = useCallback(
-        async (triageData) => {
-            if (!id) return;
-            const result = await createTriage(id, triageData);
-            if (result?.meta?.requestStatus === 'fulfilled') {
-                // Optionally navigate or show success message
-                // navigate('/psychologist/triage');
+        async (triageData, onFormClear) => {
+            if (!id || saving) return;
+            
+            setSaving(true);
+            try {
+                if (isEditMode && triageId) {
+                    // Edit mode: create a duplicate
+                    const result = await duplicateTriage(id, triageId, triageData);
+                    if (result?.meta?.requestStatus === 'fulfilled') {
+                        // Success: navigate back to history after a short delay
+                        setTimeout(() => {
+                            navigate(`/psychologist/patients/history/${id}`);
+                        }, 1500);
+                    }
+                } else {
+                    // Create mode: create new triage
+                    const result = await createTriage(id, triageData);
+                    if (result?.meta?.requestStatus === 'fulfilled') {
+                        // Success: clear form for next entry
+                        if (onFormClear && typeof onFormClear === 'function') {
+                            onFormClear();
+                        }
+                    }
+                }
+            } finally {
+                setSaving(false);
             }
         },
-        [id, createTriage]
+        [id, triageId, isEditMode, createTriage, duplicateTriage, navigate, saving]
     );
 
-    if (loading) {
+    if (loading || (isEditMode && loadingTriage)) {
         return (
             <Container maxWidth="xl" sx={{ py: 4 }}>
-                <Typography>Loading client details...</Typography>
+                <Typography>Loading {isEditMode ? 'triage record' : 'client details'}...</Typography>
             </Container>
         );
     }
@@ -350,7 +395,13 @@ export default function StartTriage() {
                                 flexDirection: 'column'
                             }}
                         >
-                            <TriageLeftPanel patientId={id} onSave={handleSaveTriage} />
+                            <TriageLeftPanel 
+                                patientId={id} 
+                                onSave={handleSaveTriage}
+                                initialData={isEditMode ? selectedTriage : null}
+                                isEditMode={isEditMode}
+                                saving={saving}
+                            />
                         </Grid>
 
                         {/* Divider */}

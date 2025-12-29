@@ -6,6 +6,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import HistoryFilters from '../../components/psychologist/history/HistoryFilters';
 import HistoryTableList from '../../components/psychologist/history/HistoryTableList';
 import HistoryPagination from '../../components/psychologist/history/HistoryPagination';
+import HistoryViewRecordModal from '../../components/psychologist/history/HistoryViewRecordModal';
 import useTriage from '../../hooks/triageHook';
 import usePatients from '../../hooks/patientHook';
 
@@ -29,6 +30,8 @@ export default function PatientsTriageHistory() {
     sortBy: 'createdAt',
     sortOrder: 'desc'
   });
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [selectedTriageId, setSelectedTriageId] = useState(null);
 
   useEffect(() => {
     if (!patientId) {
@@ -74,6 +77,20 @@ export default function PatientsTriageHistory() {
 
   const handleBack = useCallback(() => {
     navigate(-1);
+  }, [navigate]);
+
+  const handleViewTriage = useCallback((triage) => {
+    setSelectedTriageId(triage._id);
+    setViewModalOpen(true);
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    setViewModalOpen(false);
+    setSelectedTriageId(null);
+  }, []);
+
+  const handleEditTriage = useCallback((patientId, triageId) => {
+    navigate(`/psychologist/triage/${patientId}/${triageId}`);
   }, [navigate]);
 
   const appliedFiltersSummary = useMemo(() => {
@@ -168,7 +185,11 @@ export default function PatientsTriageHistory() {
         )}
       </Card>
 
-      <HistoryTableList rows={triageHistory} loading={loading || patientLoading} />
+      <HistoryTableList 
+        rows={triageHistory} 
+        loading={loading || patientLoading}
+        onView={handleViewTriage}
+      />
       {triageHistoryPagination && (
         <HistoryPagination
           page={triageHistoryPagination.currentPage}
@@ -177,6 +198,15 @@ export default function PatientsTriageHistory() {
           onChange={handlePageChange}
         />
       )}
+
+      {/* View Triage Modal */}
+      <HistoryViewRecordModal
+        open={viewModalOpen}
+        onClose={handleCloseModal}
+        triageId={selectedTriageId}
+        patientId={patientId}
+        onEdit={handleEditTriage}
+      />
     </Container>
   );
 }

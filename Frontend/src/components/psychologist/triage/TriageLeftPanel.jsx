@@ -14,6 +14,7 @@ import {
 import { motion } from 'framer-motion';
 import ClearIcon from '@mui/icons-material/Clear';
 import SaveIcon from '@mui/icons-material/Save';
+import CircularProgress from '@mui/material/CircularProgress';
 import useTriage from '../../../hooks/triageHook';
 import useDiagnosis from '../../../hooks/diagnosisHook';
 
@@ -44,7 +45,7 @@ const DEFAULT_SUGGESTIONS = [
   'appetite_changes'
 ];
 
-export default function TriageLeftPanel({ patientId, onSave }) {
+export default function TriageLeftPanel({ patientId, onSave, initialData = null, isEditMode = false, saving = false }) {
   const { matchDiagnoses, loading, matchPagination } = useTriage();
   const { loadSymptoms, symptoms: suggestionList } = useDiagnosis();
   const [symptoms, setSymptoms] = useState([]);
@@ -56,6 +57,18 @@ export default function TriageLeftPanel({ patientId, onSave }) {
   const [systemFilters, setSystemFilters] = useState({ dsm5: true, icd10: true });
   const [notes, setNotes] = useState('');
   const [diagnosisLimit, setDiagnosisLimit] = useState(2);
+
+  // Pre-populate form when initialData is provided (edit mode)
+  useEffect(() => {
+    if (initialData) {
+      setSymptoms(initialData.symptoms || []);
+      setDuration(initialData.duration ? String(initialData.duration) : '');
+      setDurationUnit(initialData.durationUnit || 'months');
+      setCourse(initialData.course || null);
+      setSeverityLevel(initialData.severityLevel || '');
+      setNotes(initialData.notes || '');
+    }
+  }, [initialData]);
 
   // Sync limit with pagination when it changes
   useEffect(() => {
@@ -138,7 +151,7 @@ export default function TriageLeftPanel({ patientId, onSave }) {
   };
 
   const handleSaveClick = () => {
-    if (!severityLevel) {
+    if (!severityLevel || saving) {
       return;
     }
     const triageData = {
@@ -149,7 +162,7 @@ export default function TriageLeftPanel({ patientId, onSave }) {
       ...(course && { course }),
       ...(notes && { notes })
     };
-    onSave?.(triageData);
+    onSave?.(triageData, handleClear);
   };
 
   return (
@@ -168,10 +181,12 @@ export default function TriageLeftPanel({ patientId, onSave }) {
         {/* Header */}
         <Box>
           <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 600, mb: 0.5 }}>
-            Client Input
+            {isEditMode ? 'Edit Triage Record' : 'Client Input'}
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-            Enter symptoms, duration, and course. Saving to: {patientId?.slice(-8) || 'N/A'}
+            {isEditMode 
+              ? 'Modify the triage details below. Saving will create a new copy (original unchanged).'
+              : `Enter symptoms, duration, and course. Saving to: ${patientId?.slice(-8) || 'N/A'}`}
           </Typography>
         </Box>
 
@@ -215,6 +230,7 @@ export default function TriageLeftPanel({ patientId, onSave }) {
             onChange={handleSymptomsChange}
             inputValue={symptomInput}
             onInputChange={(e, value) => setSymptomInput(value)}
+            disabled={saving}
             filterOptions={(options, params) => {
               const raw = params.inputValue || '';
               const key = normalizeSymptomToken(raw);
@@ -304,6 +320,7 @@ export default function TriageLeftPanel({ patientId, onSave }) {
             placeholder="e.g., 2"
             value={duration}
             onChange={(e) => setDuration(e.target.value)}
+            disabled={saving}
             sx={{ 
               flex: 1,
               '& .MuiInputBase-input': { fontSize: '0.875rem', py: 0.75 },
@@ -317,6 +334,7 @@ export default function TriageLeftPanel({ patientId, onSave }) {
             size="small"
             value={durationUnit}
             onChange={(e) => setDurationUnit(e.target.value)}
+            disabled={saving}
             sx={{ 
               minWidth: 120,
               '& .MuiInputBase-input': { fontSize: '0.875rem', py: 0.75 },
@@ -341,6 +359,7 @@ export default function TriageLeftPanel({ patientId, onSave }) {
               <Button
                 key={type}
                 variant={course === type ? 'contained' : 'outlined'}
+                disabled={saving}
                 size="small"
                 onClick={() => setCourse(course === type ? null : type)}
                 sx={{
@@ -367,6 +386,7 @@ export default function TriageLeftPanel({ patientId, onSave }) {
           onChange={(e) => setSeverityLevel(e.target.value)}
           required
           fullWidth
+          disabled={saving}
           sx={{
             '& .MuiInputBase-input': { fontSize: '0.875rem', py: 0.75 },
             '& .MuiInputLabel-root': { fontSize: '0.875rem' }
@@ -391,6 +411,7 @@ export default function TriageLeftPanel({ patientId, onSave }) {
                   checked={systemFilters.dsm5}
                   onChange={() => handleSystemFilterChange('dsm5')}
                   size="small"
+                  disabled={saving}
                 />
               }
               label="DSM-5"
@@ -402,6 +423,7 @@ export default function TriageLeftPanel({ patientId, onSave }) {
                   checked={systemFilters.icd10}
                   onChange={() => handleSystemFilterChange('icd10')}
                   size="small"
+                  disabled={saving}
                 />
               }
               label="ICD-10"
@@ -419,6 +441,7 @@ export default function TriageLeftPanel({ patientId, onSave }) {
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           fullWidth
+          disabled={saving}
           placeholder="Additional notes or observations..."
           sx={{
             '& .MuiInputBase-input': { fontSize: '0.875rem' },
@@ -433,6 +456,7 @@ export default function TriageLeftPanel({ patientId, onSave }) {
             size="small"
             startIcon={<ClearIcon sx={{ fontSize: 14 }} />}
             onClick={handleClear}
+            disabled={saving}
             sx={{ 
               flex: 1, 
               fontSize: '0.75rem',
@@ -446,18 +470,28 @@ export default function TriageLeftPanel({ patientId, onSave }) {
           <Button
             variant="contained"
             size="small"
-            startIcon={<SaveIcon sx={{ fontSize: 14 }} />}
+            startIcon={
+              saving ? (
+                <CircularProgress size={14} sx={{ color: 'inherit' }} />
+              ) : (
+                <SaveIcon sx={{ fontSize: 14 }} />
+              )
+            }
             onClick={handleSaveClick}
-            disabled={!severityLevel || symptoms.length === 0 || loading}
+            disabled={!severityLevel || symptoms.length === 0 || loading || saving}
             sx={{ 
               flex: 2, 
               fontSize: '0.75rem',
               px: 1,
               py: 0.5,
-              minHeight: 32
+              minHeight: 32,
+              position: 'relative'
             }}
           >
-            Save to Patient
+            {saving 
+              ? (isEditMode ? 'Saving Copy...' : 'Saving...')
+              : (isEditMode ? 'Save as Copy' : 'Save to Patient')
+            }
           </Button>
         </Stack>
       </Stack>

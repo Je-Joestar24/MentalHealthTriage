@@ -180,6 +180,13 @@ const router = createBrowserRouter([
                         )
                     },
                     {
+                        path: "triage/:id/:triageId", element: (
+                            <RequireAuth roles={["psychologist"]}>
+                                <TriagePatient />
+                            </RequireAuth>
+                        )
+                    },
+                    {
                         path: "patients", element: (
                             <RequireAuth roles={["psychologist"]}>
                                 <PatientsList />
