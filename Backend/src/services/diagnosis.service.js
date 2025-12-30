@@ -196,16 +196,77 @@ export async function getDiagnosisById(id) {
 }
 
 export async function createDiagnosis(diagnosisData) {
-  // Check for existing diagnosis with same name + system + code
-  const existing = await Diagnosis.findOne({
-    name: diagnosisData.name,
-    system: diagnosisData.system,
-    code: diagnosisData.code,
-    organization: diagnosisData.organization || null
-  });
-
-  if (existing) {
-    throw new Error('A diagnosis with this name, system and code already exists');
+  // Normalize dual codes - handle both camelCase and snake_case
+  const dsm5Code = diagnosisData.dsm5Code || diagnosisData.dsm5_code || undefined;
+  const icd10Code = diagnosisData.icd10Code || diagnosisData.icd10_code || undefined;
+  
+  // Set system and code based on provided codes (for backward compatibility)
+  // If both codes are provided, prefer DSM-5 as primary system
+  // If only one code is provided, use that system
+  if (!diagnosisData.system || !diagnosisData.code) {
+    if (dsm5Code && icd10Code) {
+      diagnosisData.system = diagnosisData.system || 'DSM-5';
+      diagnosisData.code = diagnosisData.code || dsm5Code;
+    } else if (dsm5Code && !icd10Code) {
+      diagnosisData.system = diagnosisData.system || 'DSM-5';
+      diagnosisData.code = diagnosisData.code || dsm5Code;
+    } else if (icd10Code && !dsm5Code) {
+      diagnosisData.system = diagnosisData.system || 'ICD-10';
+      diagnosisData.code = diagnosisData.code || icd10Code;
+    }
+  }
+  
+  // Ensure dual codes are set in the data
+  if (dsm5Code) {
+    diagnosisData.dsm5Code = dsm5Code;
+  }
+  if (icd10Code) {
+    diagnosisData.icd10Code = icd10Code;
+  }
+  
+  // Check for existing diagnosis with same name + codes
+  // Check by name + DSM-5 code if provided
+  // Check by name + ICD-10 code if provided
+  // Also check legacy name + system + code combination
+  const duplicateConditions = [];
+  
+  // Legacy check: name + system + code
+  if (diagnosisData.name && diagnosisData.system && diagnosisData.code) {
+    duplicateConditions.push({
+      name: diagnosisData.name,
+      system: diagnosisData.system,
+      code: diagnosisData.code,
+      organization: diagnosisData.organization || null
+    });
+  }
+  
+  // Check by DSM-5 code
+  if (diagnosisData.name && dsm5Code) {
+    duplicateConditions.push({
+      name: diagnosisData.name,
+      dsm5Code: dsm5Code,
+      organization: diagnosisData.organization || null
+    });
+  }
+  
+  // Check by ICD-10 code
+  if (diagnosisData.name && icd10Code) {
+    duplicateConditions.push({
+      name: diagnosisData.name,
+      icd10Code: icd10Code,
+      organization: diagnosisData.organization || null
+    });
+  }
+  
+  // Check for duplicates using $or
+  if (duplicateConditions.length > 0) {
+    const existing = await Diagnosis.findOne({
+      $or: duplicateConditions
+    });
+    
+    if (existing) {
+      throw new Error('A diagnosis with this name and code(s) already exists');
+    }
   }
 
   const diagnosis = new Diagnosis(diagnosisData);

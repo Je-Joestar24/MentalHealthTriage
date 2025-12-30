@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Stack, Button, MenuItem, InputAdornment, Chip, Box, Divider } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Stack, Button, MenuItem, InputAdornment, Chip, Box, Divider, Typography } from '@mui/material';
 import Autocomplete from '@mui/material/Autocomplete';
 import useDiagnosis from '../../../hooks/diagnosisHook';
 import useUser from '../../../hooks/userHook';
@@ -12,6 +12,8 @@ const DEFAULT_FORM = {
     name: '',
     system: 'DSM-5',
     code: '',
+    dsm5Code: '',
+    icd10Code: '',
     symptoms: [],
     course: 'Either',
     typicalDuration: { min: 0, unit: 'weeks', max:0 },
@@ -107,10 +109,32 @@ export default function DiagnosisAddModal({ open, onClose, onCreated }) {
         try {
             const role = user?.role;
             const roleToType = role === 'super_admin' ? 'global' : role === 'company_admin' ? 'organization' : 'personal';
+            
+            // Determine system and code based on provided codes
+            const dsm5Code = form.dsm5Code.trim() || undefined;
+            const icd10Code = form.icd10Code.trim() || undefined;
+            
+            // Set system based on which codes are provided (prefer DSM-5 if both, otherwise use the one provided)
+            let system = 'DSM-5'; // default
+            let code = dsm5Code || icd10Code || undefined;
+            
+            if (dsm5Code && icd10Code) {
+                system = 'DSM-5'; // Default to DSM-5 when both are present
+                code = dsm5Code; // Use DSM-5 as primary code for backward compatibility
+            } else if (icd10Code && !dsm5Code) {
+                system = 'ICD-10';
+                code = icd10Code;
+            } else if (dsm5Code && !icd10Code) {
+                system = 'DSM-5';
+                code = dsm5Code;
+            }
+            
             const payload = {
                 name: form.name.trim(),
-                system: form.system,
-                code: form.code.trim() || undefined,
+                system: system,
+                code: code,
+                dsm5Code: dsm5Code,
+                icd10Code: icd10Code,
                 type: roleToType,
                 symptoms: (form.symptoms || []).filter(Boolean),
                 course: form.course,
@@ -134,42 +158,55 @@ export default function DiagnosisAddModal({ open, onClose, onCreated }) {
         }
     };
 
-    const isValid = form.name.trim() && form.system;
+    // At least one code (DSM-5 or ICD-10) should be provided
+    const isValid = form.name.trim() && (form.dsm5Code.trim() || form.icd10Code.trim());
 
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
             <DialogTitle>Add Diagnosis</DialogTitle>
             <DialogContent>
                 <Stack spacing={2} sx={{ mt: 1 }}>
+                    <TextField
+                        label="Name"
+                        value={form.name}
+                        onChange={(e) => handleChange('name', e.target.value)}
+                        size="small"
+                        fullWidth
+                        required
+                    />
+                    
                     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
                         <TextField
-                            label="Name"
-                            value={form.name}
-                            onChange={(e) => handleChange('name', e.target.value)}
+                            label="DSM-5 Code"
+                            value={form.dsm5Code}
+                            onChange={(e) => handleChange('dsm5Code', e.target.value)}
                             size="small"
                             fullWidth
+                            placeholder="e.g., 300.4"
+                            helperText="DSM-5 diagnostic code"
                         />
                         <TextField
-                            select
-                            label="System"
-                            value={form.system}
-                            onChange={(e) => handleChange('system', e.target.value)}
-                            size="small"
-                            sx={{ minWidth: 160 }}
-                            fullWidth
-                        >
-                            {SYSTEM_OPTIONS.map((opt) => (
-                                <MenuItem key={opt} value={opt}>{opt}</MenuItem>
-                            ))}
-                        </TextField>
-                        <TextField
-                            label="Code"
-                            value={form.code}
-                            onChange={(e) => handleChange('code', e.target.value)}
+                            label="ICD-10 Code"
+                            value={form.icd10Code}
+                            onChange={(e) => handleChange('icd10Code', e.target.value)}
                             size="small"
                             fullWidth
+                            placeholder="e.g., F34.1"
+                            helperText="ICD-10 diagnostic code"
                         />
                     </Stack>
+                    
+                    <Box sx={{ 
+                        p: 1.5, 
+                        bgcolor: 'info.light', 
+                        borderRadius: 1,
+                        border: '1px solid',
+                        borderColor: 'info.main'
+                    }}>
+                        <Typography variant="caption" sx={{ fontSize: '0.75rem', color: 'info.dark' }}>
+                            <strong>Note:</strong> At least one code (DSM-5 or ICD-10) is recommended. Both codes can be provided for dual coding standard.
+                        </Typography>
+                    </Box>
 
                     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
                         <TextField

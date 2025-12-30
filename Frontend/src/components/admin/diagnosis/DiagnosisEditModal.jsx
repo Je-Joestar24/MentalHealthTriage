@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Stack, Button, MenuItem, InputAdornment, Chip, Box, Divider } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Stack, Button, MenuItem, InputAdornment, Chip, Box, Divider, Typography } from '@mui/material';
 import Autocomplete from '@mui/material/Autocomplete';
 import useDiagnosis from '../../../hooks/diagnosisHook';
 
@@ -45,11 +45,6 @@ export default function DiagnosisEditModal({ open, onClose, data, onUpdated }) {
     return Array.from(new Set([...backend, ...fallback]));
   }, [suggestionList]);
 
-  const hasDualCodes = useMemo(
-    () => Boolean(data?.dsm5Code || data?.icd10Code),
-    [data]
-  );
-  const [showDualCodes, setShowDualCodes] = useState(hasDualCodes);
 
   // Helper to normalize severity/specifiers (array -> string for display, or keep string)
   const normalizeFieldForDisplay = (value) => {
@@ -79,7 +74,6 @@ export default function DiagnosisEditModal({ open, onClose, data, onUpdated }) {
         severity: normalizeFieldForDisplay(data.severity),
         specifiers: normalizeFieldForDisplay(data.specifiers)
       });
-      setShowDualCodes(Boolean(data?.dsm5Code || data?.icd10Code));
       setSymptomInput('');
     }
     if (!open) {
@@ -143,6 +137,9 @@ export default function DiagnosisEditModal({ open, onClose, data, onUpdated }) {
 
       const payload = {
         // name/system/code/type are immutable in backend update service
+        // But dsm5Code and icd10Code can be updated
+        dsm5Code: form.dsm5Code?.trim() || undefined,
+        icd10Code: form.icd10Code?.trim() || undefined,
         symptoms: (form.symptoms || []).filter(Boolean),
         course: form.course,
         typicalDuration: {
@@ -155,11 +152,6 @@ export default function DiagnosisEditModal({ open, onClose, data, onUpdated }) {
         severity: parseFieldForBackend(form.severity),
         specifiers: parseFieldForBackend(form.specifiers),
       };
-
-      if (showDualCodes) {
-        payload.dsm5Code = form.dsm5Code?.trim() || undefined;
-        payload.icd10Code = form.icd10Code?.trim() || undefined;
-      }
 
       const result = await updateDiagnosis(data._id, payload);
       if (result?.meta?.requestStatus === 'fulfilled') {
@@ -178,57 +170,68 @@ export default function DiagnosisEditModal({ open, onClose, data, onUpdated }) {
       <DialogTitle>Edit Diagnosis</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
+          <TextField
+            label="Name"
+            value={form.name}
+            size="small"
+            fullWidth
+            disabled
+          />
+          
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
             <TextField
-              label="Name"
-              value={form.name}
+              label="DSM-5 Code"
+              value={form.dsm5Code}
+              onChange={(e) => handleChange('dsm5Code', e.target.value)}
               size="small"
               fullWidth
-              disabled
+              placeholder="e.g., 300.4"
+              helperText="DSM-5 diagnostic code"
             />
-
-            {showDualCodes ? (
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ width: '100%' }}>
-                <TextField
-                  label="DSM-5 code"
-                  value={form.dsm5Code}
-                  onChange={(e) => handleChange('dsm5Code', e.target.value)}
-                  size="small"
-                  fullWidth
-                />
-                <TextField
-                  label="ICD-10 code"
-                  value={form.icd10Code}
-                  onChange={(e) => handleChange('icd10Code', e.target.value)}
-                  size="small"
-                  fullWidth
-                />
-              </Stack>
-            ) : (
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ width: '100%' }}>
-                <TextField
-                  select
-                  label="System"
-                  value={form.system}
-                  size="small"
-                  sx={{ minWidth: 160 }}
-                  fullWidth
-                  disabled
-                >
-                  {SYSTEM_OPTIONS.map((opt) => (
-                    <MenuItem key={opt} value={opt}>{opt}</MenuItem>
-                  ))}
-                </TextField>
-                <TextField
-                  label="Code"
-                  value={form.code}
-                  size="small"
-                  fullWidth
-                  disabled
-                />
-              </Stack>
-            )}
+            <TextField
+              label="ICD-10 Code"
+              value={form.icd10Code}
+              onChange={(e) => handleChange('icd10Code', e.target.value)}
+              size="small"
+              fullWidth
+              placeholder="e.g., F34.1"
+              helperText="ICD-10 diagnostic code"
+            />
           </Stack>
+          
+          <Box sx={{ 
+            p: 1.5, 
+            bgcolor: 'info.light', 
+            borderRadius: 1,
+            border: '1px solid',
+            borderColor: 'info.main'
+          }}>
+            <Typography variant="caption" sx={{ fontSize: '0.75rem', color: 'info.dark' }}>
+              <strong>Note:</strong> You can update both DSM-5 and ICD-10 codes. At least one code is recommended.
+            </Typography>
+          </Box>
+          
+          {/* Display legacy system and code as read-only for reference 
+          {(form.system || form.code) && (
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+              <TextField
+                label="System (Legacy)"
+                value={form.system}
+                size="small"
+                fullWidth
+                disabled
+                helperText="Legacy field - for reference only"
+              />
+              <TextField
+                label="Code (Legacy)"
+                value={form.code}
+                size="small"
+                fullWidth
+                disabled
+                helperText="Legacy field - for reference only"
+              />
+            </Stack>
+          )}*/}
 
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
             <TextField
