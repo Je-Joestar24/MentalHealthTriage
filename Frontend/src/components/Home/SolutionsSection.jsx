@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Box, Container, Typography, Chip, Stack, Button } from '@mui/material';
 import { Psychology, ShieldOutlined, AssessmentOutlined, GroupOutlined, CheckCircleRounded, ArrowForward } from '@mui/icons-material';
 import '../../assets/styles/home/solutions.css';
@@ -27,6 +28,8 @@ const solutions = [
 ];
 
 export default function SolutionsSection() {
+    const navigate = useNavigate();
+    
     return (
         <Box component="section" id="solutions" className="solutions-section" aria-label="Platform Solutions">
             <Container maxWidth="xl" className="solutions-container">
@@ -83,7 +86,13 @@ export default function SolutionsSection() {
                                 </Box>
                             ))}
                             <Box className="feature-cta">
-                                <Button variant="contained" color="primary" endIcon={<ArrowForward />} aria-label="Explore all solutions">
+                                <Button 
+                                    variant="contained" 
+                                    color="primary" 
+                                    endIcon={<ArrowForward />} 
+                                    onClick={() => navigate('/auth/register')}
+                                    aria-label="Explore all solutions - navigate to registration"
+                                >
                                     Explore all solutions
                                 </Button>
                             </Box>

@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Box, Container, Typography, ToggleButtonGroup, ToggleButton, Chip, Button } from '@mui/material';
 import { CheckCircleRounded } from '@mui/icons-material';
 import '../../assets/styles/home/pricing.css';
@@ -35,6 +36,7 @@ const tiers = [
 ];
 
 export default function PricingSection() {
+  const navigate = useNavigate();
   const [billing, setBilling] = useState('monthly');
   const [seats, setSeats] = useState('4');
 
@@ -134,7 +136,14 @@ export default function PricingSection() {
                 ))}
               </ul>
 
-              <Button variant={tier.highlight ? 'contained' : 'outlined'} color="primary" sx={{mt: 'auto'}} fullWidth aria-label={`Get started with ${tier.name}`}>
+              <Button 
+                variant={tier.highlight ? 'contained' : 'outlined'} 
+                color="primary" 
+                sx={{mt: 'auto'}} 
+                fullWidth 
+                onClick={() => navigate('/auth/register')}
+                aria-label={`Get started with ${tier.name} plan`}
+              >
                 Get started
               </Button>
             </Box>

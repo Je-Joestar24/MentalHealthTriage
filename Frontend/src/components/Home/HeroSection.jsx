@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Box,
     Typography,
@@ -24,6 +25,7 @@ import {
 import heroImage from '../../assets/images/hero.png';
 
 const HeroSection = () => {
+    const navigate = useNavigate();
     const features = [
         { icon: <Speed />, text: "Fast Triage Process" },
         { icon: <Security />, text: "Secure" },
@@ -143,6 +145,7 @@ const HeroSection = () => {
                                 size="large"
                                 endIcon={<ArrowForward />}
                                 className="cta-button"
+                                onClick={() => navigate('/auth/register')}
                                 sx={{
                                     background: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
                                     px: 4,
@@ -161,6 +164,7 @@ const HeroSection = () => {
                                     },
                                     transition: 'all 0.3s ease',
                                 }}
+                                aria-label="Get started with registration"
                             >
                                 Get Started
                             </Button>
