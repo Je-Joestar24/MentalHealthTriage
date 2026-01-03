@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -28,6 +28,7 @@ const SubscriptionCancelCard = ({ organization, onCancellationSuccess }) => {
     undoOrgCancellation,
     cancellationLoading,
     cancellationError,
+    clearCancellationError,
   } = useSubscription();
 
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
@@ -45,10 +46,40 @@ const SubscriptionCancelCard = ({ organization, onCancellationSuccess }) => {
     ? new Date(organization.subscriptionEndDate)
     : null;
 
+  // Clear error when organization changes or dialog closes
+  useEffect(() => {
+    if (!cancelDialogOpen && !undoDialogOpen && cancellationError) {
+      // If error indicates cancellation is already scheduled, reload data
+      if (cancellationError.includes('already scheduled')) {
+        if (onCancellationSuccess) {
+          onCancellationSuccess();
+        }
+      }
+      // Clear error after a delay to allow user to see it
+      const timer = setTimeout(() => {
+        clearCancellationError();
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [cancelDialogOpen, undoDialogOpen, cancellationError, onCancellationSuccess, clearCancellationError]);
+
+  // Close dialogs if cancellation status changes (e.g., after successful operation)
+  useEffect(() => {
+    if (isCancellationScheduled && cancelDialogOpen) {
+      // If cancellation is now scheduled, close the cancel dialog
+      setCancelDialogOpen(false);
+      setCancellationReason('');
+    } else if (!isCancellationScheduled && undoDialogOpen) {
+      // If cancellation is undone, close the undo dialog
+      setUndoDialogOpen(false);
+    }
+  }, [isCancellationScheduled, cancelDialogOpen, undoDialogOpen]);
+
   const handleCancelClick = useCallback(() => {
     setCancellationReason('');
+    clearCancellationError();
     setCancelDialogOpen(true);
-  }, []);
+  }, [clearCancellationError]);
 
   const handleUndoCancelClick = useCallback(() => {
     setUndoDialogOpen(true);
@@ -60,13 +91,35 @@ const SubscriptionCancelCard = ({ organization, onCancellationSuccess }) => {
       if (result.success) {
         setCancelDialogOpen(false);
         setCancellationReason('');
-        // Reload organization data
+        // Reload organization data to reflect cancellation status
         if (onCancellationSuccess) {
-          onCancellationSuccess();
+          // Add a small delay to ensure backend has processed the update
+          setTimeout(() => {
+            onCancellationSuccess();
+          }, 500);
+        }
+      } else if (result.error && result.error.includes('already scheduled')) {
+        // If cancellation is already scheduled, close dialog and reload data
+        setCancelDialogOpen(false);
+        setCancellationReason('');
+        if (onCancellationSuccess) {
+          setTimeout(() => {
+            onCancellationSuccess();
+          }, 500);
         }
       }
     } catch (error) {
       console.error('Error scheduling cancellation:', error);
+      // Even on error, try to reload if it's an "already scheduled" error
+      if (error.message && error.message.includes('already scheduled')) {
+        setCancelDialogOpen(false);
+        setCancellationReason('');
+        if (onCancellationSuccess) {
+          setTimeout(() => {
+            onCancellationSuccess();
+          }, 500);
+        }
+      }
     }
   }, [organizationId, cancellationReason, scheduleOrgCancellation, onCancellationSuccess]);
 
@@ -75,9 +128,12 @@ const SubscriptionCancelCard = ({ organization, onCancellationSuccess }) => {
       const result = await undoOrgCancellation(organizationId);
       if (result.success) {
         setUndoDialogOpen(false);
-        // Reload organization data
+        // Reload organization data to reflect cancellation undo
         if (onCancellationSuccess) {
-          onCancellationSuccess();
+          // Add a small delay to ensure backend has processed the update
+          setTimeout(() => {
+            onCancellationSuccess();
+          }, 500);
         }
       }
     } catch (error) {
@@ -88,7 +144,8 @@ const SubscriptionCancelCard = ({ organization, onCancellationSuccess }) => {
   const handleCloseCancelDialog = useCallback(() => {
     setCancelDialogOpen(false);
     setCancellationReason('');
-  }, []);
+    clearCancellationError();
+  }, [clearCancellationError]);
 
   const handleCloseUndoDialog = useCallback(() => {
     setUndoDialogOpen(false);
@@ -175,9 +232,15 @@ const SubscriptionCancelCard = ({ organization, onCancellationSuccess }) => {
 
           {/* Error Display */}
           {cancellationError && (
-            <Alert severity="error" sx={{ borderRadius: 1.5 }}>
+            <Alert 
+              severity={cancellationError.includes('already scheduled') ? 'info' : 'error'} 
+              sx={{ borderRadius: 1.5 }}
+              onClose={clearCancellationError}
+            >
               <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
-                {cancellationError}
+                {cancellationError.includes('already scheduled') 
+                  ? 'Cancellation is already scheduled. Your subscription will remain active until the end of your billing period.'
+                  : cancellationError}
               </Typography>
             </Alert>
           )}
@@ -261,6 +324,15 @@ const SubscriptionCancelCard = ({ organization, onCancellationSuccess }) => {
               <> Access will continue until {subscriptionEndDate.toLocaleDateString()}.</>
             )}
           </DialogContentText>
+          {cancellationError && (
+            <Alert severity={cancellationError.includes('already scheduled') ? 'info' : 'error'} sx={{ mb: 2, borderRadius: 1.5 }}>
+              <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                {cancellationError.includes('already scheduled') 
+                  ? 'Cancellation is already scheduled. You can continue your subscription using the button below.'
+                  : cancellationError}
+              </Typography>
+            </Alert>
+          )}
           <TextField
             autoFocus
             margin="dense"
@@ -274,21 +346,24 @@ const SubscriptionCancelCard = ({ organization, onCancellationSuccess }) => {
             onChange={(e) => setCancellationReason(e.target.value)}
             placeholder="Please let us know why you're canceling..."
             sx={{ mt: 1 }}
+            disabled={cancellationError && cancellationError.includes('already scheduled')}
           />
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseCancelDialog} disabled={cancellationLoading}>
-            Keep Subscription
+            {cancellationError && cancellationError.includes('already scheduled') ? 'Close' : 'Keep Subscription'}
           </Button>
-          <Button
-            onClick={handleConfirmCancel}
-            color="error"
-            variant="contained"
-            disabled={cancellationLoading}
-            startIcon={cancellationLoading ? <CircularProgress size={16} color="inherit" /> : <CancelIcon />}
-          >
-            {cancellationLoading ? 'Processing...' : 'Confirm Cancellation'}
-          </Button>
+          {!(cancellationError && cancellationError.includes('already scheduled')) && (
+            <Button
+              onClick={handleConfirmCancel}
+              color="error"
+              variant="contained"
+              disabled={cancellationLoading}
+              startIcon={cancellationLoading ? <CircularProgress size={16} color="inherit" /> : <CancelIcon />}
+            >
+              {cancellationLoading ? 'Processing...' : 'Confirm Cancellation'}
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
 

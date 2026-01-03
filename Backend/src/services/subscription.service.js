@@ -112,8 +112,31 @@ export const scheduleOrganizationCancellation = async (organizationId, reason = 
   // Populate admin for response
   await organization.populate('admin', 'name email role');
 
+  // Convert to plain object and ensure all fields are included
+  const orgObject = organization.toObject();
+  
+  // Calculate effective status for consistency
+  const isExpired = orgObject.subscriptionEndDate && new Date() > new Date(orgObject.subscriptionEndDate);
+  const effectiveStatus = isExpired ? 'expired' : (orgObject.subscription_status === 'active' && orgObject.is_paid ? 'active' : orgObject.subscription_status);
+  
+  // Calculate days remaining
+  const now = new Date();
+  const endDate = orgObject.subscriptionEndDate;
+  const diffTime = endDate - now;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const daysRemaining = Math.max(0, diffDays);
+
   return {
-    organization: organization.toObject(),
+    organization: {
+      ...orgObject,
+      effectiveStatus,
+      isSubscriptionExpired: isExpired,
+      daysRemaining,
+      // Ensure cancellation fields are explicitly included
+      cancel_at_period_end: orgObject.cancel_at_period_end || false,
+      cancellationRequestedAt: orgObject.cancellationRequestedAt || null,
+      cancellationReason: orgObject.cancellationReason || '',
+    },
     subscription: updatedSubscription,
   };
 };
@@ -170,8 +193,31 @@ export const undoOrganizationCancellation = async (organizationId) => {
   // Populate admin for response
   await organization.populate('admin', 'name email role');
 
+  // Convert to plain object and ensure all fields are included
+  const orgObject = organization.toObject();
+  
+  // Calculate effective status for consistency
+  const isExpired = orgObject.subscriptionEndDate && new Date() > new Date(orgObject.subscriptionEndDate);
+  const effectiveStatus = isExpired ? 'expired' : (orgObject.subscription_status === 'active' && orgObject.is_paid ? 'active' : orgObject.subscription_status);
+  
+  // Calculate days remaining
+  const now = new Date();
+  const endDate = orgObject.subscriptionEndDate;
+  const diffTime = endDate - now;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const daysRemaining = Math.max(0, diffDays);
+
   return {
-    organization: organization.toObject(),
+    organization: {
+      ...orgObject,
+      effectiveStatus,
+      isSubscriptionExpired: isExpired,
+      daysRemaining,
+      // Ensure cancellation fields are explicitly included
+      cancel_at_period_end: orgObject.cancel_at_period_end || false,
+      cancellationRequestedAt: orgObject.cancellationRequestedAt || null,
+      cancellationReason: orgObject.cancellationReason || '',
+    },
     subscription: updatedSubscription,
   };
 };
