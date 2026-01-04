@@ -34,9 +34,9 @@ router.use(authenticateToken);
 // Query params: ?symptoms=depression,anxiety&system=DSM-5&duration=2&durationUnit=months&course=Continuous&severityLevel=moderate
 // Or POST with body: { symptoms: ['depression', 'anxiety'], system: 'DSM-5', duration: 2, durationUnit: 'months', course: 'Continuous', severityLevel: 'moderate', preliminaryDiagnosis: '...', notes: '...' }
 // Triage filters: duration, durationUnit (days/weeks/months/years), course (Continuous/Episodic/Either), severityLevel (low/moderate/high), preliminaryDiagnosis, notes
-// Only psychologists can match diagnoses (for triaging)
-router.get('/match-diagnoses', requirePsychologist, matchDiagnoses);
-router.post('/match-diagnoses', requirePsychologist, matchDiagnoses);
+// Psychologists and company admins can match diagnoses (company admins for viewing only)
+router.get('/match-diagnoses', requirePsychologistOrCompanyAdmin, matchDiagnoses);
+router.post('/match-diagnoses', requirePsychologistOrCompanyAdmin, matchDiagnoses);
 
 // GET /api/psychologist/patients/:patientId/triage - Get all triage records for a patient
 // Query params: ?page=1&limit=10&search=term&sortBy=createdAt&sortOrder=desc

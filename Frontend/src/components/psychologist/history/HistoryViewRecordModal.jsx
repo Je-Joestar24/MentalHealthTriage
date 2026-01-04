@@ -27,6 +27,7 @@ import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import PsychologyOutlinedIcon from '@mui/icons-material/PsychologyOutlined';
 import useTriage from '../../../hooks/triageHook';
+import useUser from '../../../hooks/userHook';
 
 const formatDate = (value) => {
     if (!value) return '—';
@@ -60,7 +61,11 @@ export default function HistoryViewRecordModal({ open, onClose, triageId, patien
         clearSelected,
         clearMatched
     } = useTriage();
+    const { user } = useUser();
     const [loadingDiagnoses, setLoadingDiagnoses] = useState(false);
+    
+    // Check if user is company_admin (should not see edit button)
+    const isCompanyAdmin = user?.role === 'company_admin';
 
     useEffect(() => {
         if (open && triageId && patientId) {
@@ -514,7 +519,7 @@ export default function HistoryViewRecordModal({ open, onClose, triageId, patien
                 <Button onClick={handleClose} variant="outlined" sx={{ textTransform: 'none' }}>
                     Close
                 </Button>
-                {selectedTriage && (
+                {selectedTriage && !isCompanyAdmin && (
                     <Button
                         onClick={handleEdit}
                         variant="contained"
