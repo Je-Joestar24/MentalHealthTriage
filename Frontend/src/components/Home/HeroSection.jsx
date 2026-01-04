@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Box,
@@ -23,20 +23,76 @@ import {
     Star
 } from '@mui/icons-material';
 import heroImage from '../../assets/images/hero.png';
+import { getPublicStats } from '../../services/public/publicService';
 
 const HeroSection = () => {
     const navigate = useNavigate();
+    const [stats, setStats] = useState([
+        { number: "--", label: "Professionals" },
+        { number: "--", label: "Clients Served" },
+        { number: "99.9%", label: "Uptime" }
+    ]);
+    const [loadingStats, setLoadingStats] = useState(true);
+
     const features = [
         { icon: <Speed />, text: "Fast Triage Process" },
         { icon: <Security />, text: "Secure" },
         { icon: <TrendingUp />, text: "Analytics & Insights" }
     ];
 
-    const stats = [
-        { number: "--", label: "Professionals" },
-        { number: "--", label: "Clients Served" },
-        { number: "99.9%", label: "Uptime" }
-    ];
+    // Format number by rounding down and adding "+" suffix (display-only manipulation)
+    // Examples: 214 → "200+", 49 → "40+", 1234 → "1,200+"
+    const formatNumber = (num) => {
+        if (num === null || num === undefined) return "--";
+        if (num === 0) return "0";
+        
+        // Round down to appropriate magnitude based on number size
+        let rounded;
+        
+        if (num < 10) {
+            // For numbers < 10, round down to nearest 1
+            rounded = Math.ceil(num);
+        } else if (num < 100) {
+            // For numbers 10-99, round down to nearest 10
+            rounded = Math.ceil(num / 10) * 10;
+        } else if (num < 1000) {
+            // For numbers 100-999, round down to nearest 100
+            rounded = Math.ceil(num / 100) * 100;
+        } else if (num < 10000) {
+            // For numbers 1000-9999, round down to nearest 1000
+            rounded = Math.ceil(num / 1000) * 1000;
+        } else {
+            // For numbers >= 10000, round down to nearest 1000
+            rounded = Math.ceil(num / 1000) * 1000;
+        }
+        
+        // Convert to string with commas and add "+" suffix
+        return rounded.toLocaleString('en-US') + '+';
+    };
+
+    // Fetch public statistics on component mount
+    useEffect(() => {
+        const fetchStats = async () => {
+            setLoadingStats(true);
+            try {
+                const result = await getPublicStats();
+                if (result.success && result.data) {
+                    setStats([
+                        { number: formatNumber(result.data.professionals), label: "Professionals" },
+                        { number: formatNumber(result.data.clients), label: "Clients Served" },
+                        { number: "99.9%", label: "Uptime" }
+                    ]);
+                }
+            } catch (error) {
+                console.error('Error fetching public stats:', error);
+                // Keep default "--" values on error
+            } finally {
+                setLoadingStats(false);
+            }
+        };
+
+        fetchStats();
+    }, []);
 
     return (
         <Box className="hero-section" role="banner" aria-label="Mental Health Triage System Hero Section">

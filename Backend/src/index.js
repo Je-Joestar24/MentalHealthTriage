@@ -17,6 +17,7 @@ import companyDetailsRouter from './routes/companydetails.routes.js';
 import psychologistsRouter from './routes/psychologists.routes.js';
 import stripeRouter from './routes/stripe.routes.js';
 import subscriptionRouter from './routes/subscription.routes.js';
+import publicRouter from './routes/public.routes.js';
 import { errorHandler } from './middleware/error.handler.js';
 
 const app = express();
@@ -56,6 +57,7 @@ app.get('/', (req, res) => {
 // other routes
 app.use('/api/items', itemsRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/public', publicRouter); // Public routes (no auth required)
 app.use('/api/admin/organizations', organizationsRouter);
 app.use('/api/diagnoses', diagnosesRouter);
 app.use('/api/admin/individuals', individualRouter);
