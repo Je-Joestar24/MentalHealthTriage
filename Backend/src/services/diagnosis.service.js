@@ -374,15 +374,25 @@ export async function bulkImportDiagnoses(diagnosesData, userId) {
       validatedScreenerParaphrased: data.validatedScreenerParaphrased || data.validated_screener_paraphrased || data.Validated_screener_paraphrased,
       exactScreenerItem: data.exactScreenerItem || data.exact_screener_item || data.Exact_screener_item,
       durationContext: data.durationContext || data.duration_context || data.Duration_context,
-      severity: parseSemicolonArray(data.severity || data.Severity), // Parse semicolon-separated to array
-      specifiers: parseSemicolonArray(data.specifiers || data.Specifiers || data.specifier), // Parse semicolon-separated to array
-      criteriaPage: data.criteriaPage ?? data.criteria_page ?? data.Criteria_page
-        ? (typeof (data.criteriaPage ?? data.criteria_page ?? data.Criteria_page) === 'string' 
-            ? parseInt(data.criteriaPage ?? data.criteria_page ?? data.Criteria_page, 10) 
-            : (data.criteriaPage ?? data.criteria_page ?? data.Criteria_page))
+      severity: Array.isArray(data.severity || data.Severity) 
+        ? (data.severity || data.Severity).filter(Boolean)
+        : parseSemicolonArray(data.severity || data.Severity), // Parse semicolon-separated to array
+      specifiers: Array.isArray(data.specifiers || data.Specifiers || data.specifier)
+        ? (data.specifiers || data.Specifiers || data.specifier).filter(Boolean)
+        : parseSemicolonArray(data.specifiers || data.Specifiers || data.specifier), // Parse semicolon-separated to array
+      criteriaPage: data.criteriaPage ?? data.criteria_page ?? data.Criteria_page ?? data.printed_page_start ?? data.printedPageStart
+        ? (() => {
+            const pageValue = data.criteriaPage ?? data.criteria_page ?? data.Criteria_page ?? data.printed_page_start ?? data.printedPageStart;
+            return typeof pageValue === 'string' 
+              ? parseInt(pageValue, 10) 
+              : pageValue;
+          })()
         : undefined,
-      // legacy single-system fields - derive from dual codes if present
-      system: data.system || (data.dsm5_code || data.dsm5Code || data.DSM5_code) ? 'DSM-5' : 'ICD-10',
+      // legacy single-system fields - derive from dual codes or default_system if present
+      // Priority: explicit system > default_system (from section_title) > dsm5_code presence > default to DSM-5
+      system: data.system || data.default_system || data.defaultSystem || 
+        ((data.dsm5_code || data.dsm5Code || data.DSM5_code) ? 'DSM-5' : 
+         ((data.icd10_code || data.icd10Code || data.ICD10_code) ? 'ICD-10' : 'DSM-5')),
       code: data.code || data.dsm5_code || data.dsm5Code || data.dsm5Code || data.DSM5_code || data.icd10_code || data.icd10Code || data.ICD10_code,
       // dual code support
       dsm5Code: data.dsm5Code || data.dsm5_code || data.DSM5_code || undefined,

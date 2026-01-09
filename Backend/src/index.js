@@ -46,7 +46,9 @@ app.use(
 app.use('/api/stripe', stripeRouter);
 
 // JSON body parser (after webhook route)
-app.use(express.json());
+// Increased limit to 50MB for bulk imports (15k+ rows)
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 if (process.env.NODE_ENV === 'development') app.use(morgan('dev'));
 
 // ✅ default route
